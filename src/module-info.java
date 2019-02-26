@@ -1,0 +1,9 @@
+/**
+ * 
+ */
+/**
+ * @author juju
+ *
+ */
+module miniChat {
+}
