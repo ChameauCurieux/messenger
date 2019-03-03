@@ -45,7 +45,7 @@ public class Server {
 
 		});
 		handler.start();
-		
+
 		// close up
 		for (Socket sock : listClients) {
 			try {
@@ -55,7 +55,7 @@ public class Server {
 			}
 		}
 	}
-	
+
 	public void stopServer() {
 		isRunning = false;
 	}
