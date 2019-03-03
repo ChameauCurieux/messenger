@@ -2,10 +2,11 @@ package miniChat;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
-import java.nio.channels.Channel;
 import java.nio.channels.ClosedSelectorException;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -59,6 +60,7 @@ public class ServerChannel {
 
 							while (iterator.hasNext()) {
 								SelectionKey key = iterator.next();
+								iterator.remove();
 
 								if(key.isAcceptable()) {
 									// creating new connection
@@ -68,7 +70,7 @@ public class ServerChannel {
 									clientChannel.register(selector, clientChannel.validOps());
 									System.out.println("Added client " + clientChannel.getRemoteAddress());
 								}
-								
+
 								if(key.isConnectable()) {
 									((SocketChannel)key.channel()).finishConnect();
 								}
@@ -77,7 +79,11 @@ public class ServerChannel {
 									// read message
 									SocketChannel clientChannel = (SocketChannel) key.channel();
 									ByteBuffer buffer = ByteBuffer.allocate(256);
-									clientChannel.read(buffer);
+									int nbBytesRead = clientChannel.read(buffer);
+									// if connection closed client side
+									if (nbBytesRead == -1) {
+										continue;
+									}
 									byte[] byteArray = buffer.array();
 									String content = new String(byteArray).trim();
 									System.out.println("Received message : \"" + content + "\", from : " + clientChannel.getRemoteAddress());
@@ -86,9 +92,6 @@ public class ServerChannel {
 								if(key.isWritable()) {
 									// send message
 								}
-
-								// once the channel key has been handled, we remove it from the set
-								iterator.remove();
 							}
 						} catch (IOException | CancelledKeyException | ClosedSelectorException e) {
 							e.printStackTrace();
@@ -108,16 +111,23 @@ public class ServerChannel {
 		System.out.println("Closing the server...");
 		isRunning = false;
 		try {
-			/*serverChannel.socket().close();
-			serverChannel.close();*/
 			for (SelectionKey key : selector.keys()) {
-				// TODO java.lang.ClassCastException: class sun.nio.ch.ServerSocketChannelImpl cannot be cast to class java.nio.channels.SocketChannel
-				SocketChannel channel = (SocketChannel) key.channel();
-				channel.socket().close();
-				channel.close();
+				SelectableChannel channel = key.channel();
+				if (channel.equals(serverChannel)) {
+					serverChannel.socket().close();			
+					serverChannel.close();
+					System.out.println("	Closing server socket");
+				}
+				else {
+					SocketChannel clientChannel = (SocketChannel) channel;
+					Socket clientSocket = clientChannel.socket();
+					System.out.println("	Closing connection to client " + clientSocket.getRemoteSocketAddress());
+					clientSocket.close();
+					clientChannel.close();
+				}
+				key.cancel();
 			}
 			selector.close();
-			// TODO loop doesn't stop immediately
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

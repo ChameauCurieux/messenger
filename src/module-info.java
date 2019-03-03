@@ -5,5 +5,5 @@
  * @author juju
  *
  */
-module miniChat {
-}
+//module miniChat {
+//}

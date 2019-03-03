@@ -2,6 +2,7 @@ package miniChat;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
@@ -16,14 +17,18 @@ public class TestMiniChat {
 
 		// test messages client -> server
 		client1.sendMessage("1");
-		client1.sendMessage("2");
+		client1.sendMessage("-1");
+		client2.sendMessage("2");
+		client2.close();
+		
+		client1.sendMessage("--1");
 
 		// wait a bit
 		Thread.sleep(5000);
 		
 		// close
+		//client2.close();
 		client1.close();
-		client2.close();
 		server.stopServer();
 	}	
 
@@ -41,18 +46,22 @@ public class TestMiniChat {
 		}
 
 		public void sendMessage(String msg) {
+			// FIXME sending messages too close to one another (before the server reads) melds them together
 			try {
 				byte[] message = msg.getBytes();
 				ByteBuffer buffer = ByteBuffer.wrap(message);
 				clientChannel.write(buffer);
-				buffer.clear();
-			} catch (IOException e) {
+				Thread.sleep(5);
+			} catch (IOException | InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
 
 		public void close() {
 			try {
+				Socket clientSocket = clientChannel.socket();
+				//System.out.println("(Client " + clientSocket.getLocalSocketAddress() + ") Left");
+				clientSocket.close();
 				clientChannel.close();
 			} catch (IOException e) {
 				e.printStackTrace();
