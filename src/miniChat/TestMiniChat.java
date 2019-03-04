@@ -10,20 +10,16 @@ public class TestMiniChat {
 		Client client2 = new Client(port);
 
 		// test messages client -> server
-		//client1.sendRandomMessages(2);	
-		//client2.sendRandomMessages(2);
+		client1.sendRandomMessages(1);
+		client2.sendRandomMessages(1);
 		client2.close();
 		
 		Client client3 = new Client(port);
-		//client1.sendRandomMessages(2);	
-		//client3.sendRandomMessages(2);	
-
-		// wait a bit
-		Thread.sleep(1000);
-
+		client3.sendRandomMessages(1);
+		client1.sendRandomMessages(1);
+		
 		// close
-		//client2.close();
-		client1.close();
+		//client1.close();
 		server.stopServer();
 	}
 }

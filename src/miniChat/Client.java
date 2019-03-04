@@ -48,6 +48,7 @@ public class Client {
 			for (int i = 0; i < messageLength; i++) {
 				msg[i] = symbols[generator.nextInt(symbols.length)];				
 			}
+			//msg = (name + "." + j).getBytes();
 			ByteBuffer buffer = ByteBuffer.wrap(msg);
 			try {
 				clientChannel.write(buffer);
@@ -69,10 +70,28 @@ public class Client {
 		}
 	}
 
+	public void receiveMessage() {
+		// TODO listen for messages
+		try {
+			ByteBuffer buffer = ByteBuffer.allocate(256);
+			int nbBytesRead = clientChannel.read(buffer);
+			
+			if (nbBytesRead == -1) {
+				System.err.println("Connexion to server lost");
+			}
+			else {
+				System.err.println("<< From server : " + buffer.array());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
 	public void close() {
 		try {
 			Socket clientSocket = clientChannel.socket();
-			//System.out.println("(Client " + clientSocket.getLocalSocketAddress() + ") Left");
+			//System.out.println("(Client " + clientSocket.getLocalSocketAddress() + ") Leaving");
 			clientSocket.close();
 			clientChannel.close();
 		} catch (IOException e) {
