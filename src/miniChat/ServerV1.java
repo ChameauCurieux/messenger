@@ -7,14 +7,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class Server {
+public class ServerV1 {
 	int port;
 	List<Socket> listClients;
 	boolean isRunning = false;
 	Thread handler;
 	ServerSocket servSock;
 
-	public Server(int p) {
+	public ServerV1(int p) {
 		try {
 			port = p;
 			servSock = new ServerSocket(port);			

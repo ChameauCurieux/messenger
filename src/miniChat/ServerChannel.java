@@ -20,8 +20,8 @@ public class ServerChannel {
 	ServerSocketChannel serverChannel;
 	Thread handler;
 	boolean isRunning = false;
-	//List<String> waitingMessages; TODO keep a list of messages to send
 	String messageReceived;
+	
 
 	/**
 	 * Creates a local server bound to the given port.
@@ -48,7 +48,7 @@ public class ServerChannel {
 	}
 
 	/**
-	 * Launch the server handler
+	 * Launches the server handler
 	 */
 	public void startServer() {
 		try {
@@ -64,36 +64,15 @@ public class ServerChannel {
 	}
 
 	/**
-	 * Stop the server handler and close remaining connections
+	 * Stops the server handler
 	 */
 	public void stopServer() {
 		System.out.println("Closing the server :");
 		isRunning = false;
-		try {
-			for (SelectionKey key : selector.keys()) {
-				SelectableChannel channel = key.channel();
-				if (channel.equals(serverChannel)) {
-					serverChannel.socket().close();			
-					serverChannel.close();
-					System.out.println("	- Closing server socket");
-				}
-				else {
-					SocketChannel clientChannel = (SocketChannel) channel;
-					Socket clientSocket = clientChannel.socket();
-					System.out.println("	- Closing connection to client " + clientSocket.getRemoteSocketAddress());
-					clientSocket.close();
-					clientChannel.close();
-				}
-				key.cancel();
-			}
-			selector.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
 	/**
-	 * Handles connection and I/O with clients in an infinite loop, until stopped.
+	 * Handles connection and I/O with clients in an infinite loop, until stopped, when it cleans up the remaining connections.
 	 * Works in a separate thread.
 	 * @author juju
 	 *
@@ -104,11 +83,11 @@ public class ServerChannel {
 		public void run() {
 			while(isRunning) {
 				try {
-					selector.select();
+					selector.selectNow();
 					// checks whether the selector is open
-					if (!selector.isOpen()) {
-						break;
-					}
+					/*
+					 * if (!selector.isOpen()) { break; }
+					 */
 					Set<SelectionKey> selectedKeys = selector.selectedKeys();
 					Iterator<SelectionKey> iterator = selectedKeys.iterator();
 
@@ -142,6 +121,29 @@ public class ServerChannel {
 				} catch (IOException | CancelledKeyException | ClosedSelectorException e) {
 					e.printStackTrace();
 				}
+			}
+			
+			// end server : clean up
+			try {
+				for (SelectionKey key : selector.keys()) {
+					SelectableChannel channel = key.channel();
+					if (channel.equals(serverChannel)) {
+						serverChannel.socket().close();			
+						serverChannel.close();
+						System.out.println("	- Closing server socket");
+					}
+					else {
+						SocketChannel clientChannel = (SocketChannel) channel;
+						Socket clientSocket = clientChannel.socket();
+						System.out.println("	- Closing connection to client " + clientSocket.getRemoteSocketAddress());
+						clientSocket.close();
+						clientChannel.close();
+					}
+					key.cancel();
+				}
+				selector.close();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
 
