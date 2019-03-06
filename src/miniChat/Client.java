@@ -1,8 +1,8 @@
 package miniChat;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Random;
@@ -11,32 +11,42 @@ public class Client {
 	static int instanceCount = 0;
 	String name;
 	SocketChannel clientChannel;
+	Thread messageListener; 
 	Random generator;
+	boolean isRunning;
 
-	public Client(int port) {
-		instanceCount++;
-		name = "client" + instanceCount;
-		generator = new Random();
-		try {
-			clientChannel = SocketChannel.open(new InetSocketAddress("localhost", port));
-			clientChannel.configureBlocking(false);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	/**
+	 * Creates a client connected to the server at address ad.
+	 * The name of the client is chosen generically.
+	 * @param ad : server's address
+	 */
+	public Client(SocketAddress ad) {
+		this(ad, "client" + instanceCount);
 	}
 
-	public Client(int port, String n) {
+	/**
+	 * Creates a client, named n, connected to the server at address ad
+	 * @param ad : server's address
+	 * @param n : client's name
+	 */
+	public Client(SocketAddress address, String n) {
 		instanceCount++;
 		name = n;
+		// for random messages
 		generator = new Random();
 		try {
-			clientChannel = SocketChannel.open(new InetSocketAddress("localhost", port));
+			// connects to the server
+			clientChannel = SocketChannel.open(address);
 			clientChannel.configureBlocking(false);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
+	/**
+	 * Send messageNumber random 10-bytes-long messages to the server
+	 * @param messageNumber : the number of messages to be sent
+	 */
 	public void sendRandomMessages(int messageNumber) {
 		sendRandomMessages(messageNumber, 10);
 	}
@@ -48,7 +58,6 @@ public class Client {
 			for (int i = 0; i < messageLength; i++) {
 				msg[i] = symbols[generator.nextInt(symbols.length)];				
 			}
-			//msg = (name + "." + j).getBytes();
 			ByteBuffer buffer = ByteBuffer.wrap(msg);
 			try {
 				clientChannel.write(buffer);
@@ -70,32 +79,50 @@ public class Client {
 		}
 	}
 
-	public void receiveMessage() {
-		// TODO listen for messages
-		try {
-			ByteBuffer buffer = ByteBuffer.allocate(256);
-			int nbBytesRead = clientChannel.read(buffer);
-			
-			if (nbBytesRead == -1) {
-				System.err.println("Connexion to server lost");
-			}
-			else {
-				System.err.println("<< From server : " + buffer.array());
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
+	public void startClient() {
+		// starts listening for messages
+		isRunning = true;
+		messageListener = new Thread(new MessageListener());
+		messageListener.start();
+
 	}
-	
+
 	public void close() {
-		try {
-			Socket clientSocket = clientChannel.socket();
-			//System.out.println("(Client " + clientSocket.getLocalSocketAddress() + ") Leaving");
-			clientSocket.close();
-			clientChannel.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+		isRunning = false;
+		if (clientChannel.isOpen()) {
+			try {
+				Socket clientSocket = clientChannel.socket();
+				//System.out.println("(Client " + clientSocket.getLocalSocketAddress() + ") Leaving");
+				clientSocket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
+	}
+
+
+	class MessageListener implements Runnable {
+
+		@Override
+		public void run() {
+			while (isRunning) {
+				try {
+					ByteBuffer buffer = ByteBuffer.allocate(256);
+					int nbBytesRead = clientChannel.read(buffer);
+
+					if (nbBytesRead == -1) {
+						System.out.println("	Connexion to server lost");
+						close();
+					}
+					else if (nbBytesRead > 0){
+						System.out.println("	< From server : " + buffer.array());
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+
+			}
+		}
+
 	}
 }

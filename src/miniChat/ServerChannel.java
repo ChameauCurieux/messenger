@@ -1,8 +1,10 @@
 package miniChat;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedSelectorException;
@@ -21,7 +23,7 @@ import java.util.Set;
 public class ServerChannel {
 	Selector selector;
 	ServerSocketChannel serverChannel;
-	Thread handler;
+	Thread serverHandler;
 	boolean isRunning = false;
 	String messageReceived;
 	Map<SocketChannel, Set<byte[]>> waitingMessages;
@@ -53,7 +55,31 @@ public class ServerChannel {
 			e.printStackTrace();
 		}
 	}
-
+	/**
+	 * Creates a local server bound to a random port.
+	 * It uses NIO channels to communicate with the clients.
+	 */
+	public ServerChannel() {
+		waitingMessages = new HashMap<SocketChannel, Set<byte[]>>();
+		try {
+			// create new selector
+			selector = Selector.open();
+			// create new channel
+			serverChannel = ServerSocketChannel.open();
+			// bind it to a port
+			//String ipString = getPublicIP();
+			//InetAddress ipAddress = InetAddress.getByName("localhost");
+			InetSocketAddress address = new InetSocketAddress(InetAddress.getLocalHost(), 0);
+			serverChannel.bind(address);
+			// set it to non-blocking
+			serverChannel.configureBlocking(false);
+			// add it to the selector (interested in "accept" events)
+			serverChannel.register(selector, serverChannel.validOps());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	/**
 	 * Launches the server handler
 	 */
@@ -63,20 +89,29 @@ public class ServerChannel {
 			System.out.println("-------------------------");
 			isRunning = true;
 			// creating new handler
-			handler = new Thread(new ServerHandler());
+			serverHandler = new Thread(new ServerHandler());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		// start the handler
-		handler.start();
+		serverHandler.start();
 	}
 
 	/**
 	 * Stops the server handler
 	 * @throws InterruptedException 
 	 */
-	public void stopServer() throws InterruptedException {
-		Thread.sleep(100);
+	public void stopServer(){
+		// no effect if server not started
+		if (!isRunning) {
+			return;
+		}
+		
+		try {
+			Thread.sleep(100);
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}
 		System.out.println("-------------------------");
 		System.out.println(" Closing the server ...");
 		isRunning = false;
@@ -101,6 +136,10 @@ public class ServerChannel {
 		System.out.println("	Unsent messages : " + unsent);
 	}
 
+	public SocketAddress getAddress() throws IOException {
+		return serverChannel.getLocalAddress();
+	}
+	
 	/**
 	 * Handles connection and I/O with clients in an infinite loop, until stopped, when it cleans up the remaining connections.
 	 * Works in a separate thread.
@@ -193,7 +232,7 @@ public class ServerChannel {
 					ByteBuffer buffer = ByteBuffer.wrap(messageBytes);
 					clientChannel.write(buffer);
 					iterator.remove();
-					System.out.println("	>> To "+ clientChannel.getRemoteAddress() + " : \"" + new String(messageBytes) + "\"");
+					System.out.println("> To "+ clientChannel.getRemoteAddress() + " : \"" + new String(messageBytes) + "\"");
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -222,7 +261,7 @@ public class ServerChannel {
 				else {
 					byte[] byteArray = buffer.array();
 					messageReceived = new String(byteArray).trim();
-					System.out.println("	<< From "+ clientChannel.getRemoteAddress() + " : \"" + messageReceived + "\"");
+					System.out.println("< From "+ clientChannel.getRemoteAddress() + " : \"" + messageReceived + "\"");
 
 					/*
 					 * HashMap<byte[], Boolean> map = waitingMessages.get(clientChannel);
@@ -232,7 +271,7 @@ public class ServerChannel {
 					// adding it to the waiting list of all other clients, with hasBeenSent = false
 					for (SocketChannel clientChan : waitingMessages.keySet()) {
 						if (!clientChan.equals(clientChannel)) {
-							System.out.println("	     -> " + clientChan.getRemoteAddress() + " waiting");
+							System.out.println("-> " + clientChan.getRemoteAddress() + " waiting");
 							Set<byte[]> messageSet = waitingMessages.get(clientChan);
 							messageSet.add(byteArray);
 							waitingMessages.put(clientChan, messageSet);

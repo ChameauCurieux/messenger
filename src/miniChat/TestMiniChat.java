@@ -1,27 +1,29 @@
 package miniChat;
 
-import java.net.InetSocketAddress;
+import java.io.IOException;
 
 public class TestMiniChat {
-	// arbitrary values
-	public static String host = "localhost";
-	public static int port = 2000;
-	public static InetSocketAddress serverSocketAddress = new InetSocketAddress(host, port);
 
 	public static void main(String[] args) throws InterruptedException {
-		ServerChannel server = new ServerChannel(port);
+		ServerChannel server = new ServerChannel();
 		server.startServer();
-		Client client1 = new Client(port);
-		Client client2 = new Client(port);
-
-		// test messages client -> server
-		client1.sendRandomMessages(1);
-		client2.sendRandomMessages(1);
-		client2.close();
-		
-		Client client3 = new Client(port);
-		client3.sendRandomMessages(1);
-		client1.sendRandomMessages(1);
+		Client client1;
+		Client client2;
+		try {
+			client1 = new Client(server.getAddress());
+			client2 = new Client(server.getAddress());
+			// test messages client -> server
+			client1.sendRandomMessages(1);
+			client2.sendRandomMessages(1);
+			// minus one client
+			client2.close();
+			// plus one client
+			Client client3 = new Client(server.getAddress());
+			client3.sendRandomMessages(1);
+			client1.sendRandomMessages(1);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		
 		// close
 		//client1.close();
