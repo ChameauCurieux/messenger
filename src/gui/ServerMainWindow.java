@@ -1,7 +1,9 @@
 package gui;
 
+import java.awt.BorderLayout;
 import java.awt.EventQueue;
 import java.awt.GridLayout;
+import java.io.IOException;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -10,8 +12,6 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
 import miniChat.ServerChannel;
-import miniChat.TestMiniChat;
-import net.miginfocom.swing.MigLayout;
 
 public class ServerMainWindow {
 
@@ -24,10 +24,7 @@ public class ServerMainWindow {
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
-				try {
-					server = new ServerChannel(TestMiniChat.port);
-					server.startServer();
-					
+				try {					
 					ServerMainWindow window = new ServerMainWindow();
 					window.frmMinichatServer.setVisible(true);
 				} catch (Exception e) {
@@ -39,18 +36,23 @@ public class ServerMainWindow {
 
 	/**
 	 * Create the application.
+	 * @throws IOException 
 	 */
-	public ServerMainWindow() {
+	public ServerMainWindow() throws IOException {
+		server = new ServerChannel();
+		server.startServer();
 		initialize();
 	}
 
 	/**
 	 * Initialize the contents of the frame.
+	 * @throws IOException 
 	 */
-	private void initialize() {
+	private void initialize() throws IOException {
 		frmMinichatServer = new JFrame();
+		frmMinichatServer.setResizable(false);
 		frmMinichatServer.setTitle("Mini-Chat Server");
-		frmMinichatServer.setBounds(100, 100, 333, 243);
+		frmMinichatServer.setBounds(100, 100, 322, 220);
 		frmMinichatServer.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		JPanel addressPanel = new JPanel();
@@ -60,21 +62,21 @@ public class ServerMainWindow {
 		addressTipLabel.setHorizontalAlignment(SwingConstants.CENTER);
 		addressPanel.add(addressTipLabel);
 		
-		JLabel addressLabel = new JLabel(TestMiniChat.serverSocketAddress.toString());
+		JLabel addressLabel = new JLabel(server.getAddress().toString());
 		addressPanel.add(addressLabel);
 		addressLabel.setHorizontalAlignment(SwingConstants.CENTER);
 		
 		JPanel buttonsPanel = new JPanel();
-		buttonsPanel.setLayout(new MigLayout("", "[93px][91px]", "[23px]"));
+		buttonsPanel.setLayout(new GridLayout(1, 1, 0, 0));
 		
 		JButton startServerButton = new JButton("Start Server");
 		buttonsPanel.add(startServerButton, "cell 0 0,alignx left,aligny top");
 		
 		JButton stopServerButton = new JButton("Stop Server");
 		buttonsPanel.add(stopServerButton, "cell 1 0,alignx left,aligny top");
-		frmMinichatServer.getContentPane().setLayout(new MigLayout("", "[442px]", "[136px][136px]"));
-		frmMinichatServer.getContentPane().add(addressPanel, "cell 0 0,grow");
-		frmMinichatServer.getContentPane().add(buttonsPanel, "cell 0 1,alignx center,aligny center");
+		frmMinichatServer.getContentPane().setLayout(new BorderLayout(0, 0));
+		frmMinichatServer.getContentPane().add(addressPanel, BorderLayout.CENTER);
+		frmMinichatServer.getContentPane().add(buttonsPanel, BorderLayout.SOUTH);
 	}
 
 }
