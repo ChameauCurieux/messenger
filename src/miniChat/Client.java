@@ -38,6 +38,7 @@ public class Client {
 			// connects to the server
 			clientChannel = SocketChannel.open(address);
 			clientChannel.configureBlocking(false);
+			startClient();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -58,28 +59,29 @@ public class Client {
 			for (int i = 0; i < messageLength; i++) {
 				msg[i] = symbols[generator.nextInt(symbols.length)];				
 			}
-			ByteBuffer buffer = ByteBuffer.wrap(msg);
-			try {
-				clientChannel.write(buffer);
-				Thread.sleep(10);
-			} catch (IOException | InterruptedException e) {
-				e.printStackTrace();
-			}
+			sendMessage(msg);
 		}
 	}
 
 	public void sendMessage(String msg) {
+		sendMessage(msg.getBytes());
+	}
+	
+	public void sendMessage(byte[] message) {
 		try {
-			byte[] message = msg.getBytes();
 			ByteBuffer buffer = ByteBuffer.wrap(message);
 			clientChannel.write(buffer);
+			System.err.println(name + " : > To server : \"" + new String(message) + "\"");
 			Thread.sleep(10);
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
 		}
+		
 	}
 
 	public void startClient() {
+		// send own name to server
+		sendMessage(name);
 		// starts listening for messages
 		isRunning = true;
 		messageListener = new Thread(new MessageListener());
@@ -92,7 +94,7 @@ public class Client {
 		if (clientChannel.isOpen()) {
 			try {
 				Socket clientSocket = clientChannel.socket();
-				//System.out.println("(Client " + clientSocket.getLocalSocketAddress() + ") Leaving");
+				//System.err.println("(Client " + clientSocket.getLocalSocketAddress() + ") Leaving");
 				clientSocket.close();
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -111,11 +113,11 @@ public class Client {
 					int nbBytesRead = clientChannel.read(buffer);
 
 					if (nbBytesRead == -1) {
-						System.out.println("	Connexion to server lost");
+						System.err.println(name + " : Connexion to server lost");
 						close();
 					}
 					else if (nbBytesRead > 0){
-						System.out.println("	< From server : " + buffer.array());
+						System.err.println(name + " : < From server : " + new String(buffer.array()));
 					}
 				} catch (IOException e) {
 					e.printStackTrace();
