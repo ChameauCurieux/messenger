@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Random;
 
-public class Client {
+public class Client implements AutoCloseable {
 	static int instanceCount = 0;
 	String name;
 	SocketChannel clientChannel;
