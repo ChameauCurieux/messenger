@@ -1,7 +1,6 @@
 package miniChat;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -9,11 +8,16 @@ import java.util.Random;
 
 public class Client implements AutoCloseable {
 	static int instanceCount = 0;
-	String name;
+	// connection
 	SocketChannel clientChannel;
-	Thread messageListener; 
+	// name
+	String name;
+	// random
 	Random generator;
-	boolean isRunning;
+	// multi-threading
+	Thread messageListener; 
+	boolean isRunning = false;
+	Object doneRunning = new Object();
 
 	/**
 	 * Creates a client connected to the server at address ad.
@@ -89,13 +93,26 @@ public class Client implements AutoCloseable {
 
 	}
 
+	/**
+	 * Tells the messageListener to stop,
+	 * and close the connection to the server
+	 * after the reading is done
+	 */
 	public void close() {
 		isRunning = false;
+		
+		// wait until all messages are read
+		synchronized (doneRunning) {
+			try {
+				doneRunning.wait();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
 		if (clientChannel.isOpen()) {
 			try {
-				Socket clientSocket = clientChannel.socket();
-				//System.err.println("(Client " + clientSocket.getLocalSocketAddress() + ") Leaving");
-				clientSocket.close();
+				clientChannel.socket().close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -122,7 +139,10 @@ public class Client implements AutoCloseable {
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
-
+				
+				synchronized (doneRunning) {
+					doneRunning.notify();
+				}
 			}
 		}
 

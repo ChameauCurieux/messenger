@@ -37,7 +37,7 @@ public class ServerChannel {
 	// multi-threading
 	Thread serverHandler;
 	boolean isRunning = false;
-	Object doneRunning;
+	Object doneRunning = new Object();
 
 
 	/**
@@ -77,7 +77,7 @@ public class ServerChannel {
 	 */
 	public void startServer() {
 		try {
-			System.out.println("server :  Starting server " + serverChannel.getLocalAddress());
+			System.out.println("server : Starting server " + serverChannel.getLocalAddress());
 			System.out.println("server : -------------------------");
 			isRunning = true;
 			// creating new handler
@@ -99,8 +99,6 @@ public class ServerChannel {
 			return;
 		}
 
-		System.out.println("server : -------------------------");
-		System.out.println("server :  Closing the server ...");
 		isRunning = false;
 
 		// wait until the handler has processed all messages
@@ -111,6 +109,9 @@ public class ServerChannel {
 				e.printStackTrace();
 			}
 		}
+		
+		System.out.println("server : -------------------------");
+		System.out.println("server : Closing the server ...");
 
 		// Checking for unsent messages
 		int unsent = 0;
@@ -137,19 +138,21 @@ public class ServerChannel {
 
 				SelectableChannel channel = key.channel();
 				if (channel.equals(serverChannel)) {
-					System.out.println("server :  ... Closing server socket");
+					System.out.println("server : ... Closing server socket");
 					((ServerSocketChannel)channel).socket().close();
 					key.cancel();
 				}
 				else {
-					System.out.println("server :  ... Closing connection to client " + ((SocketChannel) channel).getRemoteAddress());
+					System.out.println("server : ... Closing connection to client " + ((SocketChannel) channel).getRemoteAddress());
 					closeClient(key);
 				}
 			}
+			System.out.println("server : ... Closing server selector");
 			selector.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		System.out.println("server : Done");
 	}
 
 	public SocketAddress getAddress() throws IOException {
@@ -163,8 +166,8 @@ public class ServerChannel {
 	 */
 	private void closeClient(SelectionKey key) throws IOException {
 		SocketChannel clientChannel = (SocketChannel) key.channel();
-		waitingMessages.remove(clientChannel);
-		clientNames.remove(clientChannel);
+		//waitingMessages.remove(clientChannel);
+		//clientNames.remove(clientChannel);
 		clientChannel.socket().close();
 		key.cancel();
 	}
@@ -201,7 +204,7 @@ public class ServerChannel {
 						// Connecting
 						if(key.isConnectable()) {
 							SocketChannel clientChannel = (SocketChannel) key.channel();
-							System.out.println("server :  + Finishing connection " + clientNames.get(clientChannel));
+							System.out.println("server : + Finishing connection " + clientNames.get(clientChannel));
 							clientChannel.finishConnect();
 						}
 
@@ -260,7 +263,7 @@ public class ServerChannel {
 
 				// if end of connection client side => closing
 				if (nbBytesRead == -1) {
-					System.out.println("server :  - Lost connection to client " + clientNames.get(clientChannel));
+					System.out.println("server : - Lost connection to client " + clientNames.get(clientChannel));
 					closeClient(key);
 				}
 
@@ -272,7 +275,7 @@ public class ServerChannel {
 					// first message received = client name
 					if (clientNames.get(clientChannel) == null) {
 						messageReceived = messageReceived.trim();
-						System.out.println("server : client " + clientChannel.getRemoteAddress() + " named \"" + messageReceived + "\"");
+						System.out.println("server :   Named client " + clientChannel.getRemoteAddress() + " -> \"" + messageReceived + "\"");
 						clientNames.put(clientChannel, messageReceived);
 					}
 					// next messages = to be transmitted
@@ -283,7 +286,7 @@ public class ServerChannel {
 						// adding it to the waiting list of all other clients, with hasBeenSent = false
 						for (SocketChannel otherClientChan : waitingMessages.keySet()) {
 							if (!otherClientChan.equals(clientChannel)) {
-								System.out.println("server :	-> " + clientNames.get(otherClientChan) + " waiting");
+								System.out.println("server :	Waiting -> " + clientNames.get(otherClientChan));
 								Set<byte[]> messageSet = waitingMessages.get(otherClientChan);
 								messageSet.add(byteArray);
 								waitingMessages.put(otherClientChan, messageSet);
@@ -310,7 +313,7 @@ public class ServerChannel {
 				clientChannel.register(selector, clientChannel.validOps());
 				// adding it to the hashmap
 				waitingMessages.put(clientChannel, new LinkedHashSet<byte[]>());
-				System.out.println("server :  + Added client " + clientChannel.getRemoteAddress());
+				System.out.println("server : + Added client " + clientChannel.getRemoteAddress());
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

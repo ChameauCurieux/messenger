@@ -12,9 +12,8 @@ public class BufferMethods {
 	 */
 	public static byte[] trimArray(ByteBuffer buffer, int n) {
 		byte[] array = new byte[n];
-		for (int i = 0; i < n ; i++) {
-			array[i] = buffer.get();
-		}
+		buffer.rewind();
+		buffer.get(array);
 		return array;		
 	}
 }
