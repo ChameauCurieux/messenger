@@ -12,6 +12,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
 import miniChat.ServerChannel;
+import javax.swing.ImageIcon;
 
 public class ServerMainWindow {
 
@@ -70,9 +71,11 @@ public class ServerMainWindow {
 		buttonsPanel.setLayout(new GridLayout(1, 1, 0, 0));
 		
 		JButton startServerButton = new JButton("Start Server");
+		startServerButton.setIcon(new ImageIcon(ServerMainWindow.class.getResource("/gui/icons/start.png")));
 		buttonsPanel.add(startServerButton, "cell 0 0,alignx left,aligny top");
 		
 		JButton stopServerButton = new JButton("Stop Server");
+		stopServerButton.setIcon(new ImageIcon(ServerMainWindow.class.getResource("/gui/icons/stop.png")));
 		buttonsPanel.add(stopServerButton, "cell 1 0,alignx left,aligny top");
 		frmMinichatServer.getContentPane().setLayout(new BorderLayout(0, 0));
 		frmMinichatServer.getContentPane().add(addressPanel, BorderLayout.CENTER);
