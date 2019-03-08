@@ -206,6 +206,7 @@ public class ServerMainWindow {
 		stopServerButton.setAction(stopServerAction);
 		
 		infoText = new JLabel();
+		infoText.setHorizontalAlignment(SwingConstants.CENTER);
 		infoText.setEnabled(false);
 		GridBagConstraints gbc_infoText = new GridBagConstraints();
 		gbc_infoText.fill = GridBagConstraints.BOTH;
