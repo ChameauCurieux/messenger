@@ -25,6 +25,7 @@ public class ServerChannel {
 	// connecting to the web
 	Selector selector;
 	ServerSocketChannel serverChannel;
+	Integer port = null;
 
 	// managing client messages 
 	String messageReceived;
@@ -73,6 +74,8 @@ public class ServerChannel {
 	 * Launches the server handler
 	 */
 	public void startServer() {
+		// remember the port for later
+		this.port = serverChannel.socket().getLocalPort();
 		try {
 			System.out.println("server : Starting server " + serverChannel.getLocalAddress());
 			System.out.println("server : -------------------------");
@@ -154,6 +157,14 @@ public class ServerChannel {
 
 	public SocketAddress getAddress() throws IOException {
 		return serverChannel.getLocalAddress();
+	}
+	
+	public int getPort() {
+		return port;
+	}
+	
+	public boolean wasStartedAndClosed() {
+		return port != null && !isRunning;
 	}
 
 	/**
