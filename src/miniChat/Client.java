@@ -132,6 +132,7 @@ public class Client implements AutoCloseable {
 	 * Starts listening to the server's messages
 	 */
 	public void startClient() {
+		// TODO not send messages until server ready
 		// send own name to server
 		sendMessage(name);
 		// starts listening for messages
