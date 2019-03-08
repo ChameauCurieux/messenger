@@ -18,7 +18,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-import utils.BufferMethods;
+import utils.ArrayMethods;
 
 
 public class ServerChannel {
@@ -29,9 +29,6 @@ public class ServerChannel {
 	// managing client messages 
 	String messageReceived;
 	Map<SocketChannel, Set<byte[]>> waitingMessages;
-	/* Use : waitingMessages[clientChannel][message] = hasBeenSent <=> the message has been sent to the client channel, if hasBeenSent = true
-	 * When a message is sent to a client, its entry is deleted
-	 */
 	Map<SocketChannel, String> clientNames;
 
 	// multi-threading
@@ -138,21 +135,21 @@ public class ServerChannel {
 
 				SelectableChannel channel = key.channel();
 				if (channel.equals(serverChannel)) {
-					System.out.println("server : ... Closing server socket");
+					System.out.println("server :	... Closing server socket");
 					((ServerSocketChannel)channel).socket().close();
 					key.cancel();
 				}
 				else {
-					System.out.println("server : ... Closing connection to client " + ((SocketChannel) channel).getRemoteAddress());
+					System.out.println("server :	... Closing connection to client " + ((SocketChannel) channel).getRemoteAddress());
 					closeClient(key);
 				}
 			}
-			System.out.println("server : ... Closing server selector");
+			System.out.println("server :	... Closing server selector");
 			selector.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		System.out.println("server : Done");
+		System.out.println("server : Done.");
 	}
 
 	public SocketAddress getAddress() throws IOException {
@@ -166,8 +163,6 @@ public class ServerChannel {
 	 */
 	private void closeClient(SelectionKey key) throws IOException {
 		SocketChannel clientChannel = (SocketChannel) key.channel();
-		//waitingMessages.remove(clientChannel);
-		//clientNames.remove(clientChannel);
 		clientChannel.socket().close();
 		key.cancel();
 	}
@@ -185,10 +180,6 @@ public class ServerChannel {
 			while(isRunning) {
 				try {
 					selector.selectNow();
-					// checks whether the selector is open
-					/*
-					 * if (!selector.isOpen()) { break; }
-					 */
 					Set<SelectionKey> selectedKeys = selector.selectedKeys();
 					Iterator<SelectionKey> iterator = selectedKeys.iterator();
 
@@ -269,7 +260,7 @@ public class ServerChannel {
 
 				// else => reading message
 				else {
-					byte[] byteArray = BufferMethods.trimArray(buffer, nbBytesRead);
+					byte[] byteArray = ArrayMethods.trimArray(buffer, nbBytesRead);
 					messageReceived = new String(byteArray);
 					
 					// first message received = client name

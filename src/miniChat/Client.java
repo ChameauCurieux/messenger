@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.List;
 import java.util.Random;
+
+import utils.ArrayMethods;
 
 public class Client implements AutoCloseable {
 	static int instanceCount = 0;
@@ -19,6 +22,7 @@ public class Client implements AutoCloseable {
 	boolean isRunning = false;
 	Object doneRunning = new Object();
 
+	///////////////////// CONSTRUCTORS ////////////////////////
 	/**
 	 * Creates a client connected to the server at address ad.
 	 * The name of the client is chosen generically.
@@ -47,7 +51,29 @@ public class Client implements AutoCloseable {
 			e.printStackTrace();
 		}
 	}
-
+	
+	
+	///////////////////// SENDING MESSAGES ////////////////////////
+	/**
+	 * Sends a message of the given length,
+	 * that consists of "123456789,12345..." and so on
+	 * @param length
+	 */
+	public void sendTestMessage(int length) {
+		byte[] message = new byte[length];
+		int j = 1;
+		for (int i = 0; i < length; i++) {
+			if (j < 10) {
+				message[i] = (byte) Integer.toString(j).charAt(0);
+				j++;
+			} else {
+				message[i] = (byte) ",".charAt(0);
+				j = 1;
+			}
+		}
+		sendMessage(message);
+	}
+	
 	/**
 	 * Send messageNumber random 10-bytes-long messages to the server
 	 * @param messageNumber : the number of messages to be sent
@@ -67,22 +93,44 @@ public class Client implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * Send the message msg to the server
+	 * @param msg : the message to be sent
+	 */
 	public void sendMessage(String msg) {
 		sendMessage(msg.getBytes());
 	}
-	
+
+	/**
+	 * Send the message to the server
+	 * @param message : the message to be sent
+	 */
 	public void sendMessage(byte[] message) {
 		try {
+			if (message.length > 256) {
+				// divide up the message in 256-bytes segments
+				List<byte[]> segments = ArrayMethods.split(message);
+				for (byte[] segment : segments) {
+					sendMessage(segment);
+				}
+			} else {
 			ByteBuffer buffer = ByteBuffer.wrap(message);
 			clientChannel.write(buffer);
 			System.err.println(name + " : > To server : \"" + new String(message) + "\"");
 			Thread.sleep(10);
+			}
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
 		}
 		
 	}
+	
 
+	///////////////////// START & STOP ////////////////////////
+	/**
+	 * Sends own name to server &
+	 * Starts listening to the server's messages
+	 */
 	public void startClient() {
 		// send own name to server
 		sendMessage(name);
@@ -100,6 +148,11 @@ public class Client implements AutoCloseable {
 	 */
 	public void close() {
 		isRunning = false;
+		try {
+			clientChannel.shutdownOutput();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
 		
 		// wait until all messages are read
 		synchronized (doneRunning) {
@@ -110,6 +163,7 @@ public class Client implements AutoCloseable {
 			}
 		}
 		
+		// then we close
 		if (clientChannel.isOpen()) {
 			try {
 				clientChannel.socket().close();
@@ -124,6 +178,7 @@ public class Client implements AutoCloseable {
 
 		@Override
 		public void run() {
+			// read indefinitely the server's message
 			while (isRunning) {
 				try {
 					ByteBuffer buffer = ByteBuffer.allocate(256);
@@ -139,10 +194,11 @@ public class Client implements AutoCloseable {
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
-				
-				synchronized (doneRunning) {
-					doneRunning.notify();
-				}
+			}
+			
+			// when reading is over, we tell the main thread
+			synchronized (doneRunning) {
+				doneRunning.notify();
 			}
 		}
 
