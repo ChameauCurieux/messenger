@@ -20,40 +20,95 @@ public class Client implements AutoCloseable {
 	// multi-threading
 	Thread messageListener; 
 	boolean isRunning = false;
+	Boolean serverReady = false;
 	Object doneRunning = new Object();
 
-	///////////////////// CONSTRUCTORS ////////////////////////
+	//////////////////////////////// CONSTRUCTORS ///////////////////////////////////
 	/**
 	 * Creates a client connected to the server at address ad.
 	 * The name of the client is chosen generically.
 	 * @param ad : server's address
+	 * @throws IOException if opening the socket has failed in any way
+	 * @throws InterruptedException if the client had to wait during startup, and was interrupted
 	 */
-	public Client(SocketAddress ad) {
+	public Client(SocketAddress ad) throws IOException, InterruptedException {
 		this(ad, "client" + instanceCount);
 	}
 
 	/**
-	 * Creates a client, named n, connected to the server at address ad
+	 * Creates a client, named n, connected to the server at address ad.
+	 * <br>Starts the client
 	 * @param ad : server's address
 	 * @param n : client's name
+	 * @throws IOException if opening the socket has failed in any way
+	 * @throws InterruptedException if the client had to wait during startup, 
+	 * and was interrupted
 	 */
-	public Client(SocketAddress address, String n) {
+	public Client(SocketAddress ad, String n) throws IOException, InterruptedException {
 		instanceCount++;
 		name = n;
 		// for random messages
 		generator = new Random();
+		// connects to the server
+		clientChannel = SocketChannel.open(ad);
+		clientChannel.configureBlocking(false);
+		startClient();
+	}
+
+	//////////////////////////////// START & STOP ///////////////////////////////////
+	/**
+	 * Wait until server is ready, then
+	 * sends own name to server &
+	 * starts listening for messages
+	 * @throws InterruptedException if the wait has been interrupted
+	 */
+	public void startClient() throws InterruptedException {
+		// starts listening for messages
+		isRunning = true;
+		messageListener = new Thread(new MessageListener());
+		messageListener.start();
+		// wait until server is ready
+		synchronized (serverReady) {
+			serverReady.wait();
+		}
+		// send own name to server
+		sendMessage(name);
+
+	}
+
+	/**
+	 * Tells the messageListener to stop,
+	 * and close the connection to the server
+	 * after the reading is done
+	 */
+	public void close() {
+		isRunning = false;
 		try {
-			// connects to the server
-			clientChannel = SocketChannel.open(address);
-			clientChannel.configureBlocking(false);
-			startClient();
-		} catch (IOException e) {
-			e.printStackTrace();
+			clientChannel.shutdownOutput();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+
+		// wait until all messages are read
+		synchronized (doneRunning) {
+			try {
+				doneRunning.wait();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+
+		// then we close
+		if (clientChannel.isOpen()) {
+			try {
+				clientChannel.socket().close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
-	
-	
-	///////////////////// SENDING MESSAGES ////////////////////////
+
+	//////////////////////////////// SENDING MESSAGES ///////////////////////////////////
 	/**
 	 * Sends a message of the given length,
 	 * that consists of "123456789,12345..." and so on
@@ -73,7 +128,7 @@ public class Client implements AutoCloseable {
 		}
 		sendMessage(message);
 	}
-	
+
 	/**
 	 * Send messageNumber random 10-bytes-long messages to the server
 	 * @param messageNumber : the number of messages to be sent
@@ -114,66 +169,18 @@ public class Client implements AutoCloseable {
 					sendMessage(segment);
 				}
 			} else {
-			ByteBuffer buffer = ByteBuffer.wrap(message);
-			clientChannel.write(buffer);
-			System.err.println(name + " : > To server : \"" + new String(message) + "\"");
-			Thread.sleep(10);
+				ByteBuffer buffer = ByteBuffer.wrap(message);
+				clientChannel.write(buffer);
+				System.out.println(name + " : > To server : \"" + new String(message) + "\"");
+				Thread.sleep(10);
 			}
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
 		}
-		
-	}
-	
-
-	///////////////////// START & STOP ////////////////////////
-	/**
-	 * Sends own name to server &
-	 * Starts listening to the server's messages
-	 */
-	public void startClient() {
-		// TODO not send messages until server ready
-		// send own name to server
-		sendMessage(name);
-		// starts listening for messages
-		isRunning = true;
-		messageListener = new Thread(new MessageListener());
-		messageListener.start();
 
 	}
 
-	/**
-	 * Tells the messageListener to stop,
-	 * and close the connection to the server
-	 * after the reading is done
-	 */
-	public void close() {
-		isRunning = false;
-		try {
-			clientChannel.shutdownOutput();
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		
-		// wait until all messages are read
-		synchronized (doneRunning) {
-			try {
-				doneRunning.wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		
-		// then we close
-		if (clientChannel.isOpen()) {
-			try {
-				clientChannel.socket().close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
+	//////////////////////////////// HANDLER ///////////////////////////////////
 
 	class MessageListener implements Runnable {
 
@@ -185,18 +192,31 @@ public class Client implements AutoCloseable {
 					ByteBuffer buffer = ByteBuffer.allocate(256);
 					int nbBytesRead = clientChannel.read(buffer);
 
+					// end-of-stream
 					if (nbBytesRead == -1) {
-						System.err.println(name + " : Connexion to server lost");
+						System.out.println(name + " : Connexion to server lost");
 						close();
 					}
-					else if (nbBytesRead > 0){
-						System.err.println(name + " : < From server : " + new String(buffer.array()));
+					// received message
+					else if (nbBytesRead > 0) {
+						// acknowledgement message
+						if (!serverReady){
+							serverReady = true;
+							// notify the main thread
+							synchronized (serverReady) {
+								serverReady.notify();
+							}
+						}
+						// regular message
+						else {
+							System.out.println(name + " : < From server : " + new String(buffer.array()));							
+						}
 					}
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
-			
+
 			// when reading is over, we tell the main thread
 			synchronized (doneRunning) {
 				doneRunning.notify();

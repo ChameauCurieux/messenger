@@ -1,6 +1,5 @@
 package gui;
 
-import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -27,41 +26,49 @@ import javax.swing.SwingConstants;
 
 import miniChat.ServerChannel;
 
+/**
+ * Displays informations and controls for a server.
+ * Its content is updated by the associated server.
+ * @author juju
+ *
+ */
 public class ServerMainWindow {
 
-	public static ServerMainWindow instance;
-	public static JFrame frmMinichatServer;
-	private static ServerChannel server;
+	public JFrame frmMinichatServer;
+	public JTextArea chatTextArea;
+	public JTextArea chatInputTextArea;
+	public JTextArea clientListTextArea;
+	public JLabel clientListLabel;
+	public JLabel infoText;
+	public JTextField addressTextField;
+	private ServerChannel server;
 	private final Action startServerAction = new StartAction();
 	private final Action stopServerAction = new StopAction();
-	public static JTextArea chatTextArea;
-	public static JTextArea chatInputTextArea;
-	public static JTextArea clientListTextArea;
-	public static JLabel clientListLabel;
-	public static JLabel infoText;
-	public static JTextField addressTextField;
+	private JButton startServerButton;
+	private JButton stopServerButton;
 
 	/**
 	 * Launch the application.
 	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {					
-					ServerMainWindow.instance = new ServerMainWindow();
-					ServerMainWindow.frmMinichatServer.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
+//	public static void main(String[] args) {
+//		EventQueue.invokeLater(new Runnable() {
+//			public void run() {
+//				try {					
+//					ServerMainWindow.instance = new ServerMainWindow();
+//					ServerMainWindow.frmMinichatServer.setVisible(true);
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//				}
+//			}
+//		});
+//	}
 
 	/**
 	 * Create the application with a new Server
+	 * @wbp.parser.constructor 
 	 */
 	public ServerMainWindow() {
-		server = new ServerChannel();
+		server = new ServerChannel(this);
 		initialize();
 	}
 	
@@ -70,6 +77,7 @@ public class ServerMainWindow {
 	 */
 	public ServerMainWindow(ServerChannel serv) {
 		server = serv;
+		server.setWindow(this);
 		initialize();
 	}
 
@@ -78,6 +86,7 @@ public class ServerMainWindow {
 	 * @throws IOException 
 	 */
 	private void initialize() {
+		
 		frmMinichatServer = new JFrame();
 		frmMinichatServer.setResizable(false);
 		frmMinichatServer.setTitle("Mini-Chat : Server");
@@ -185,7 +194,6 @@ public class ServerMainWindow {
 		commandPanel.add(buttonsPanel, gbc_buttonsPanel);
 		buttonsPanel.setLayout(new GridLayout(1, 2, 0, 0));
 
-		// TODO make sure the icons actually appear, at a correct size
 		Icon iconStart = new ImageIcon(ServerMainWindow.class.getResource("/gui/icons/start.png"));
 		Icon iconStop = new ImageIcon(ServerMainWindow.class.getResource("/gui/icons/stop.png"));
 		Image img = ((ImageIcon) iconStart).getImage() ;  
@@ -195,15 +203,19 @@ public class ServerMainWindow {
 		iconStart = new ImageIcon(newimg);
 		iconStop = new ImageIcon(newimg2);
 
-		JButton startServerButton = new JButton("Start Server");
-		startServerButton.setIcon(iconStart);
-		buttonsPanel.add(startServerButton, "cell 0 0,alignx left,aligny top");
+		startServerButton = new JButton();
 		startServerButton.setAction(startServerAction);
+		startServerButton.setText("Start server");
+		startServerButton.setIcon(iconStart);
+		startServerButton.setEnabled(true);
+		buttonsPanel.add(startServerButton, "cell 0 0,alignx left,aligny top");
 
-		JButton stopServerButton = new JButton("Stop Server");
-		stopServerButton.setIcon(iconStop);
-		buttonsPanel.add(stopServerButton, "cell 1 0,alignx left,aligny top");
+		stopServerButton = new JButton();
 		stopServerButton.setAction(stopServerAction);
+		stopServerButton.setText("Stop server");
+		stopServerButton.setIcon(iconStop);
+		stopServerButton.setEnabled(false);
+		buttonsPanel.add(stopServerButton, "cell 1 0,alignx left,aligny top");
 		
 		infoText = new JLabel();
 		infoText.setHorizontalAlignment(SwingConstants.CENTER);
@@ -225,28 +237,39 @@ public class ServerMainWindow {
 		frmMinichatServer.getContentPane().add(chatSplitPane, gbc_chatSplitPane);
 	}
 
+	///////////////////////////////// ACTIONS /////////////////////////////////
 	private class StartAction extends AbstractAction {
 		private static final long serialVersionUID = -4916659130588867419L;
+		
 		public StartAction() {
 			putValue(NAME, "StartAction");
 			putValue(SHORT_DESCRIPTION, "Starts the server");
 		}
+		
 		public void actionPerformed(ActionEvent e) {
-			if (server.wasStartedAndClosed()) {
-				// restart with the same port
-				server = new ServerChannel(server.getPort());
-			}
+//			if (server.wasStartedAndClosed()) {
+//				// restart with the same port
+//				int port = server.getPort();
+//				server = new ServerChannel(port);
+//			}
 			server.startServer();
+			stopServerButton.setEnabled(true);
+			startServerButton.setEnabled(false);
 		}
 	}
+	
 	private class StopAction extends AbstractAction {
 		private static final long serialVersionUID = 5410957576196610695L;
+		
 		public StopAction() {
 			putValue(NAME, "StopAction");
 			putValue(SHORT_DESCRIPTION, "Stops the server");
 		}
+		
 		public void actionPerformed(ActionEvent e) {
-			server.stopServer();
+			server.close();
+			stopServerButton.setEnabled(false);
+			startServerButton.setEnabled(true);
 		}
 	}
 }
