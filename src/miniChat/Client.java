@@ -7,21 +7,23 @@ import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.Random;
 
+import gui.ClientMainWindow;
 import utils.ArrayMethods;
 
 public class Client implements AutoCloseable {
-	static int instanceCount = 0;
+	public static int instanceCount = 0;
 	// connection
-	SocketChannel clientChannel;
+	private SocketChannel clientChannel;
 	// name
-	String name;
+	private String name;
 	// random
-	Random generator;
+	private Random generator;
 	// multi-threading
-	Thread messageListener; 
-	boolean isRunning = false;
-	Boolean serverReady = false;
-	Object doneRunning = new Object();
+	private Thread messageListener; 
+	private boolean isRunning = false;
+	private Boolean serverReady = false;
+	private Object doneRunning = new Object();
+	private ClientMainWindow window;
 
 	//////////////////////////////// CONSTRUCTORS ///////////////////////////////////
 	/**
@@ -29,9 +31,8 @@ public class Client implements AutoCloseable {
 	 * The name of the client is chosen generically.
 	 * @param ad : server's address
 	 * @throws IOException if opening the socket has failed in any way
-	 * @throws InterruptedException if the client had to wait during startup, and was interrupted
 	 */
-	public Client(SocketAddress ad) throws IOException, InterruptedException {
+	public Client(SocketAddress ad) throws IOException {
 		this(ad, "client" + instanceCount);
 	}
 
@@ -41,10 +42,8 @@ public class Client implements AutoCloseable {
 	 * @param ad : server's address
 	 * @param n : client's name
 	 * @throws IOException if opening the socket has failed in any way
-	 * @throws InterruptedException if the client had to wait during startup, 
-	 * and was interrupted
 	 */
-	public Client(SocketAddress ad, String n) throws IOException, InterruptedException {
+	public Client(SocketAddress ad, String n) throws IOException {
 		instanceCount++;
 		name = n;
 		// for random messages
@@ -52,7 +51,6 @@ public class Client implements AutoCloseable {
 		// connects to the server
 		clientChannel = SocketChannel.open(ad);
 		clientChannel.configureBlocking(false);
-		startClient();
 	}
 
 	//////////////////////////////// START & STOP ///////////////////////////////////
@@ -62,14 +60,28 @@ public class Client implements AutoCloseable {
 	 * starts listening for messages
 	 * @throws InterruptedException if the wait has been interrupted
 	 */
-	public void startClient() throws InterruptedException {
+	public void startClient() {
+		// no effect if it is already running
+		if (isRunning) {
+			return;
+		}
 		// starts listening for messages
 		isRunning = true;
 		messageListener = new Thread(new MessageListener());
 		messageListener.start();
+		
+		// updates window
+		window.nameTextField.setText(name);
+		
 		// wait until server is ready
 		synchronized (serverReady) {
-			serverReady.wait();
+			try {
+				window.infoText.setText("Waiting for server...");
+				serverReady.wait();
+				window.infoText.setText("Connected to server");
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 		// send own name to server
 		sendMessage(name);
@@ -82,6 +94,11 @@ public class Client implements AutoCloseable {
 	 * after the reading is done
 	 */
 	public void close() {
+		// no effect if it wasn't started
+		if (!isRunning) {
+			return;
+		}
+		
 		isRunning = false;
 		try {
 			clientChannel.shutdownOutput();
@@ -108,6 +125,11 @@ public class Client implements AutoCloseable {
 		}
 	}
 
+
+	public void setWindow(ClientMainWindow clientMainWindow) {
+		window = clientMainWindow;
+	}
+	
 	//////////////////////////////// SENDING MESSAGES ///////////////////////////////////
 	/**
 	 * Sends a message of the given length,
@@ -164,6 +186,7 @@ public class Client implements AutoCloseable {
 		try {
 			if (message.length > 256) {
 				// divide up the message in 256-bytes segments
+				// TODO fuse segments in one long message
 				List<byte[]> segments = ArrayMethods.split(message);
 				for (byte[] segment : segments) {
 					sendMessage(segment);
@@ -171,7 +194,7 @@ public class Client implements AutoCloseable {
 			} else {
 				ByteBuffer buffer = ByteBuffer.wrap(message);
 				clientChannel.write(buffer);
-				System.out.println(name + " : > To server : \"" + new String(message) + "\"");
+				window.chatTextArea.append(name + " : > To server : \"" + new String(message) + "\"\n");
 				Thread.sleep(10);
 			}
 		} catch (IOException | InterruptedException e) {
@@ -194,7 +217,8 @@ public class Client implements AutoCloseable {
 
 					// end-of-stream
 					if (nbBytesRead == -1) {
-						System.out.println(name + " : Connexion to server lost");
+						window.infoText.setText("Connexion lost");
+						window.chatTextArea.append(name + " : Connexion to server lost\n");
 						close();
 					}
 					// received message
@@ -209,7 +233,7 @@ public class Client implements AutoCloseable {
 						}
 						// regular message
 						else {
-							System.out.println(name + " : < From server : " + new String(buffer.array()));							
+							window.chatTextArea.append(name + " : < From server : " + new String(buffer.array()) + "\n");							
 						}
 					}
 				} catch (IOException e) {

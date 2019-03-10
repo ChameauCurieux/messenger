@@ -7,6 +7,8 @@ import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 
 import javax.swing.AbstractAction;
@@ -23,6 +25,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.WindowConstants;
 
 import miniChat.ServerChannel;
 
@@ -34,7 +37,7 @@ import miniChat.ServerChannel;
  */
 public class ServerMainWindow {
 
-	public JFrame frmMinichatServer;
+	public JFrame frame;
 	public JTextArea chatTextArea;
 	public JTextArea chatInputTextArea;
 	public JTextArea clientListTextArea;
@@ -42,6 +45,7 @@ public class ServerMainWindow {
 	public JLabel infoText;
 	public JTextField addressTextField;
 	private ServerChannel server;
+
 	private final Action startServerAction = new StartAction();
 	private final Action stopServerAction = new StopAction();
 	private JButton startServerButton;
@@ -68,8 +72,7 @@ public class ServerMainWindow {
 	 * @wbp.parser.constructor 
 	 */
 	public ServerMainWindow() {
-		server = new ServerChannel(this);
-		initialize();
+		this(new ServerChannel());
 	}
 	
 	/**
@@ -78,7 +81,16 @@ public class ServerMainWindow {
 	public ServerMainWindow(ServerChannel serv) {
 		server = serv;
 		server.setWindow(this);
+		new ServerWindowCloser();
 		initialize();
+	}
+	
+	public ServerChannel getServer() {
+		return server;
+	}
+
+	public void setServer(ServerChannel server) {
+		this.server = server;
 	}
 
 	/**
@@ -87,16 +99,17 @@ public class ServerMainWindow {
 	 */
 	private void initialize() {
 		
-		frmMinichatServer = new JFrame();
-		frmMinichatServer.setResizable(false);
-		frmMinichatServer.setTitle("Mini-Chat : Server");
-		frmMinichatServer.setBounds(100, 100, 713, 347);
-		frmMinichatServer.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame = new JFrame();
+		frame.setResizable(false);
+		frame.setTitle("Mini-Chat : Server");
+		frame.setBounds(100, 100, 713, 347);
+		frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+		frame.addWindowListener(new ServerWindowCloser());
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.rowWeights = new double[]{1.0};
 		gridBagLayout.columnWeights = new double[]{0.0, 1.0};
 		gridBagLayout.columnWidths = new int[]{0, 0};
-		frmMinichatServer.getContentPane().setLayout(gridBagLayout);
+		frame.getContentPane().setLayout(gridBagLayout);
 
 		chatTextArea = new JTextArea();
 		chatTextArea.setToolTipText("message history");
@@ -123,7 +136,7 @@ public class ServerMainWindow {
 		gbc_commandPanel.insets = new Insets(0, 0, 5, 5);
 		gbc_commandPanel.gridx = 0;
 		gbc_commandPanel.gridy = 0;
-		frmMinichatServer.getContentPane().add(commandPanel, gbc_commandPanel);
+		frame.getContentPane().add(commandPanel, gbc_commandPanel);
 		GridBagLayout gbl_commandPanel = new GridBagLayout();
 		gbl_commandPanel.columnWidths = new int[]{282, 0};
 		gbl_commandPanel.rowHeights = new int[]{38, 0, 0, 0, 0};
@@ -234,7 +247,7 @@ public class ServerMainWindow {
 		gbc_chatSplitPane.insets = new Insets(0, 0, 5, 0);
 		gbc_chatSplitPane.gridx = 1;
 		gbc_chatSplitPane.gridy = 0;
-		frmMinichatServer.getContentPane().add(chatSplitPane, gbc_chatSplitPane);
+		frame.getContentPane().add(chatSplitPane, gbc_chatSplitPane);
 	}
 
 	///////////////////////////////// ACTIONS /////////////////////////////////
@@ -270,6 +283,14 @@ public class ServerMainWindow {
 			server.close();
 			stopServerButton.setEnabled(false);
 			startServerButton.setEnabled(true);
+		}
+	}
+	
+	private class ServerWindowCloser extends WindowAdapter {
+		@Override
+		public void windowClosing(WindowEvent e) {
+			server.close();
+			System.exit(0);
 		}
 	}
 }
