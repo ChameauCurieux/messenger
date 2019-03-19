@@ -80,9 +80,8 @@ public class ServerMainWindow {
 	 */
 	public ServerMainWindow(ServerChannel serv) {
 		server = serv;
-		server.setWindow(this);
-		new ServerWindowCloser();
 		initialize();
+		server.setWindow(this);
 	}
 	
 	public ServerChannel getServer() {
@@ -123,6 +122,7 @@ public class ServerMainWindow {
 		JScrollPane chatTextScrollPane = new JScrollPane(chatTextArea);
 
 		chatInputTextArea = new JTextArea();
+		chatInputTextArea.setToolTipText("(doesn't do anything yet)");
 		chatInputTextArea.setWrapStyleWord(true);
 		chatInputTextArea.setLineWrap(true);
 		chatInputTextArea.setTabSize(4);
@@ -220,14 +220,14 @@ public class ServerMainWindow {
 		startServerButton.setAction(startServerAction);
 		startServerButton.setText("Start server");
 		startServerButton.setIcon(iconStart);
-		startServerButton.setEnabled(true);
+		startServerButton.setEnabled(false);
 		buttonsPanel.add(startServerButton, "cell 0 0,alignx left,aligny top");
 
 		stopServerButton = new JButton();
 		stopServerButton.setAction(stopServerAction);
 		stopServerButton.setText("Stop server");
 		stopServerButton.setIcon(iconStop);
-		stopServerButton.setEnabled(false);
+		stopServerButton.setEnabled(true);
 		buttonsPanel.add(stopServerButton, "cell 1 0,alignx left,aligny top");
 		
 		infoText = new JLabel();
@@ -290,7 +290,7 @@ public class ServerMainWindow {
 		@Override
 		public void windowClosing(WindowEvent e) {
 			server.close();
-			System.exit(0);
+			frame.dispose();
 		}
 	}
 }

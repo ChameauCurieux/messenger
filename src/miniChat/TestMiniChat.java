@@ -1,25 +1,49 @@
 package miniChat;
 
-import java.awt.EventQueue;
+import java.io.IOException;
+
+import javax.swing.SwingUtilities;
 
 import gui.ClientMainWindow;
 import gui.ServerMainWindow;
 
 public class TestMiniChat {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
+		ServerChannel s = new ServerChannel();
+		Client c = new Client(s.getAddress());
+		Client c2 = new Client(s.getAddress());
 		
-		EventQueue.invokeLater(new Runnable() {
+		SwingUtilities.invokeLater(new Runnable() {
 			
 			public void run() {
 				try {					
-					ServerMainWindow serverWindow = new ServerMainWindow();
+					ServerMainWindow serverWindow = new ServerMainWindow(s);
 					serverWindow.frame.setVisible(true);
-					ServerChannel server = serverWindow.getServer();
-					server.startServer();
-					
-					ClientMainWindow clientWindow = new ClientMainWindow(server.getAddress());
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+		
+		SwingUtilities.invokeLater(new Runnable() {
+			
+			public void run() {
+				try {
+					ClientMainWindow clientWindow = new ClientMainWindow(c);
 					clientWindow.frame.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+		
+		SwingUtilities.invokeLater(new Runnable() {
+			
+			public void run() {
+				try {
+					ClientMainWindow clientWindow2 = new ClientMainWindow(c2);
+					clientWindow2.frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}

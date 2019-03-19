@@ -23,6 +23,10 @@ import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 
 import miniChat.Client;
+import javax.swing.AbstractAction;
+import java.awt.event.ActionEvent;
+import javax.swing.Action;
+import javax.swing.ImageIcon;
 
 /**
  * Displays informations and controls for a client.
@@ -41,23 +45,24 @@ public class ClientMainWindow {
 	public JTextField addressTextField;
 	public JTextField nameTextField;
 	private Client client;
-	
+	private final Action sendAction = new SwingAction();
+
 
 	/**
 	 * Launch the application.
 	 */
-//	public static void main(String[] args) {
-//		EventQueue.invokeLater(new Runnable() {
-//			public void run() {
-//				try {					
-//					clientMainWindow.instance = new clientMainWindow();
-//					clientMainWindow.frmMinichatclient.setVisible(true);
-//				} catch (Exception e) {
-//					e.printStackTrace();
-//				}
-//			}
-//		});
-//	}
+	//	public static void main(String[] args) {
+	//		EventQueue.invokeLater(new Runnable() {
+	//			public void run() {
+	//				try {					
+	//					clientMainWindow.instance = new clientMainWindow();
+	//					clientMainWindow.frmMinichatclient.setVisible(true);
+	//				} catch (Exception e) {
+	//					e.printStackTrace();
+	//				}
+	//			}
+	//		});
+	//	}
 
 	/**
 	 * Create the application with a new client
@@ -70,14 +75,15 @@ public class ClientMainWindow {
 	public ClientMainWindow(SocketAddress address) throws IOException {
 		this(new Client(address));
 	}
-	
+
 	/**
 	 * Create the application, linked to an existing client
 	 */
 	public ClientMainWindow(Client c) {
 		client = c;
-		client.setWindow(this);
 		initialize();
+		client.setWindow(this);
+		client.startClient();
 	}
 
 
@@ -86,7 +92,7 @@ public class ClientMainWindow {
 	 * @throws IOException 
 	 */
 	private void initialize() {
-		
+
 		frame = new JFrame();
 		frame.setResizable(false);
 		frame.setTitle("Mini-Chat : client");
@@ -95,8 +101,8 @@ public class ClientMainWindow {
 		frame.addWindowListener(new clientWindowCloser());
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.rowWeights = new double[]{1.0};
-		gridBagLayout.columnWeights = new double[]{1.0, 0.0, 1.0};
-		gridBagLayout.columnWidths = new int[]{0, 0, 0};
+		gridBagLayout.columnWeights = new double[]{1.0, 1.0};
+		gridBagLayout.columnWidths = new int[]{0, 0};
 		frame.getContentPane().setLayout(gridBagLayout);
 
 		chatTextArea = new JTextArea();
@@ -118,59 +124,58 @@ public class ClientMainWindow {
 		gbc_commandPanel.gridy = 0;
 		frame.getContentPane().add(commandPanel, gbc_commandPanel);
 		GridBagLayout gbl_commandPanel = new GridBagLayout();
-		gbl_commandPanel.columnWidths = new int[]{86, 63, 0};
-		gbl_commandPanel.rowHeights = new int[]{38, 0, 0, 0, 0};
-		gbl_commandPanel.columnWeights = new double[]{1.0, 0.0, Double.MIN_VALUE};
-		gbl_commandPanel.rowWeights = new double[]{0.0, 1.0, 1.0, 1.0, Double.MIN_VALUE};
+		gbl_commandPanel.columnWidths = new int[]{86, 0};
+		gbl_commandPanel.rowHeights = new int[]{0, 38, 0, 0, 0, 0};
+		gbl_commandPanel.columnWeights = new double[]{1.0, Double.MIN_VALUE};
+		gbl_commandPanel.rowWeights = new double[]{0.0, 0.0, 1.0, 1.0, 1.0, Double.MIN_VALUE};
 		commandPanel.setLayout(gbl_commandPanel);
-
-		JPanel addressPanel = new JPanel();
-		addressPanel.setToolTipText("where the clients need to connect");
-		GridBagConstraints gbc_addressPanel = new GridBagConstraints();
-		gbc_addressPanel.fill = GridBagConstraints.HORIZONTAL;
-		gbc_addressPanel.insets = new Insets(0, 0, 5, 5);
-		gbc_addressPanel.gridx = 0;
-		gbc_addressPanel.gridy = 0;
-		commandPanel.add(addressPanel, gbc_addressPanel);
-		addressPanel.setLayout(new GridLayout(0, 1, 0, 0));
-
-		JLabel addressTipLabel = new JLabel("client address :");
-		addressTipLabel.setVerticalAlignment(SwingConstants.BOTTOM);
-		addressTipLabel.setHorizontalAlignment(SwingConstants.CENTER);
-		addressPanel.add(addressTipLabel);
-
-		addressTextField = new JTextField();
-		addressTipLabel.setLabelFor(addressTextField);
-		addressTextField.setEditable(false);
-		addressPanel.add(addressTextField);
-		addressTextField.setHorizontalAlignment(SwingConstants.CENTER);
 		
-		JPanel namePanel = new JPanel();
-		GridBagConstraints gbc_namePanel = new GridBagConstraints();
-		gbc_namePanel.insets = new Insets(0, 0, 5, 0);
-		gbc_namePanel.gridx = 1;
-		gbc_namePanel.gridy = 0;
-		commandPanel.add(namePanel, gbc_namePanel);
-		namePanel.setToolTipText("where the clients need to connect");
-		namePanel.setLayout(new GridLayout(0, 1, 0, 0));
+				JPanel addressPanel = new JPanel();
+				addressPanel.setToolTipText("where the clients need to connect");
+				GridBagConstraints gbc_addressPanel = new GridBagConstraints();
+				gbc_addressPanel.fill = GridBagConstraints.HORIZONTAL;
+				gbc_addressPanel.insets = new Insets(0, 0, 5, 0);
+				gbc_addressPanel.gridx = 0;
+				gbc_addressPanel.gridy = 0;
+				commandPanel.add(addressPanel, gbc_addressPanel);
+				addressPanel.setLayout(new GridLayout(0, 1, 0, 0));
+				
+						JLabel addressTipLabel = new JLabel("client address :");
+						addressTipLabel.setVerticalAlignment(SwingConstants.BOTTOM);
+						addressTipLabel.setHorizontalAlignment(SwingConstants.CENTER);
+						addressPanel.add(addressTipLabel);
+						
+								addressTextField = new JTextField();
+								addressTipLabel.setLabelFor(addressTextField);
+								addressTextField.setEditable(false);
+								addressPanel.add(addressTextField);
+								addressTextField.setHorizontalAlignment(SwingConstants.CENTER);
 		
-		JLabel nameLabel = new JLabel("client name :");
-		nameLabel.setVerticalAlignment(SwingConstants.BOTTOM);
-		nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
-		namePanel.add(nameLabel);
-		
-		nameTextField = new JTextField();
-		nameTextField.setEditable(false);
-		nameTextField.setHorizontalAlignment(SwingConstants.CENTER);
-		namePanel.add(nameTextField);
+				JPanel namePanel = new JPanel();
+				GridBagConstraints gbc_namePanel = new GridBagConstraints();
+				gbc_namePanel.insets = new Insets(0, 0, 5, 0);
+				gbc_namePanel.gridx = 0;
+				gbc_namePanel.gridy = 1;
+				commandPanel.add(namePanel, gbc_namePanel);
+				namePanel.setToolTipText("where the clients need to connect");
+				namePanel.setLayout(new GridLayout(0, 1, 0, 0));
+				
+						JLabel nameLabel = new JLabel("client name :");
+						nameLabel.setVerticalAlignment(SwingConstants.BOTTOM);
+						nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
+						namePanel.add(nameLabel);
+						
+								nameTextField = new JTextField();
+								nameTextField.setEditable(false);
+								nameTextField.setHorizontalAlignment(SwingConstants.CENTER);
+								namePanel.add(nameTextField);
 
 		JPanel clientListPanel = new JPanel();
 		clientListPanel.setToolTipText("");
 		GridBagConstraints gbc_clientListPanel = new GridBagConstraints();
-		gbc_clientListPanel.gridwidth = 2;
-		gbc_clientListPanel.insets = new Insets(0, 0, 5, 5);
+		gbc_clientListPanel.insets = new Insets(0, 0, 5, 0);
 		gbc_clientListPanel.gridx = 0;
-		gbc_clientListPanel.gridy = 1;
+		gbc_clientListPanel.gridy = 2;
 		commandPanel.add(clientListPanel, gbc_clientListPanel);
 		GridBagLayout gbl_clientListPanel = new GridBagLayout();
 		gbl_clientListPanel.columnWidths = new int[]{73, 0};
@@ -198,17 +203,16 @@ public class ClientMainWindow {
 		clientListTextArea.setColumns(20);
 		clientListTextArea.setRows(5);
 		clientListTextArea.setToolTipText("who is here ?");
-		
+
 		infoText = new JLabel();
 		infoText.setHorizontalAlignment(SwingConstants.CENTER);
 		infoText.setEnabled(false);
 		GridBagConstraints gbc_infoText = new GridBagConstraints();
-		gbc_infoText.insets = new Insets(0, 0, 0, 5);
 		gbc_infoText.fill = GridBagConstraints.VERTICAL;
 		gbc_infoText.gridx = 0;
-		gbc_infoText.gridy = 3;
+		gbc_infoText.gridy = 4;
 		commandPanel.add(infoText, gbc_infoText);
-		
+
 		JPanel inputPanel = new JPanel();
 		GridBagLayout gbl_inputPanel = new GridBagLayout();
 		gbl_inputPanel.columnWidths = new int[]{388, 0, 0};
@@ -222,40 +226,54 @@ public class ClientMainWindow {
 		chatSplitPane.setResizeWeight(0.8);
 		GridBagConstraints gbc_chatSplitPane = new GridBagConstraints();
 		gbc_chatSplitPane.fill = GridBagConstraints.BOTH;
-		gbc_chatSplitPane.gridx = 2;
+		gbc_chatSplitPane.gridx = 1;
 		gbc_chatSplitPane.gridy = 0;
 		frame.getContentPane().add(chatSplitPane, gbc_chatSplitPane);
-		
-				chatInputTextArea = new JTextArea();
-				chatInputTextArea.setWrapStyleWord(true);
-				chatInputTextArea.setLineWrap(true);
-				chatInputTextArea.setTabSize(4);
-				
-						JScrollPane chatInputScrollPane = new JScrollPane(chatInputTextArea);
-						GridBagConstraints gbc_chatInputScrollPane = new GridBagConstraints();
-						gbc_chatInputScrollPane.weighty = 1.0;
-						gbc_chatInputScrollPane.weightx = 1.0;
-						gbc_chatInputScrollPane.insets = new Insets(0, 0, 0, 5);
-						gbc_chatInputScrollPane.fill = GridBagConstraints.BOTH;
-						gbc_chatInputScrollPane.gridx = 0;
-						gbc_chatInputScrollPane.gridy = 0;
-						inputPanel.add(chatInputScrollPane, gbc_chatInputScrollPane);
-						
-						JButton sendButton = new JButton("Send");
-						GridBagConstraints gbc_sendButton = new GridBagConstraints();
-						gbc_sendButton.fill = GridBagConstraints.BOTH;
-						gbc_sendButton.gridx = 1;
-						gbc_sendButton.gridy = 0;
-						inputPanel.add(sendButton, gbc_sendButton);
-		
-		client.startClient();
+
+		chatInputTextArea = new JTextArea();
+		chatInputTextArea.setWrapStyleWord(true);
+		chatInputTextArea.setLineWrap(true);
+		chatInputTextArea.setTabSize(4);
+
+		JScrollPane chatInputScrollPane = new JScrollPane(chatInputTextArea);
+		GridBagConstraints gbc_chatInputScrollPane = new GridBagConstraints();
+		gbc_chatInputScrollPane.weighty = 1.0;
+		gbc_chatInputScrollPane.weightx = 1.0;
+		gbc_chatInputScrollPane.insets = new Insets(0, 0, 0, 5);
+		gbc_chatInputScrollPane.fill = GridBagConstraints.BOTH;
+		gbc_chatInputScrollPane.gridx = 0;
+		gbc_chatInputScrollPane.gridy = 0;
+		inputPanel.add(chatInputScrollPane, gbc_chatInputScrollPane);
+
+		JButton sendButton = new JButton();
+		sendButton.setAction(sendAction);
+		sendButton.setIcon(new ImageIcon(ClientMainWindow.class.getResource("/gui/icons/send_arrow.png")));
+		sendButton.setText("Send");
+		GridBagConstraints gbc_sendButton = new GridBagConstraints();
+		gbc_sendButton.fill = GridBagConstraints.BOTH;
+		gbc_sendButton.gridx = 1;
+		gbc_sendButton.gridy = 0;
+		inputPanel.add(sendButton, gbc_sendButton);
 	}
 
 	private class clientWindowCloser extends WindowAdapter {
 		@Override
 		public void windowClosing(WindowEvent e) {
 			client.close();
-			System.exit(0);
+			frame.dispose();
+		}
+	}
+	
+	private class SwingAction extends AbstractAction {
+		private static final long serialVersionUID = -7786195937926838770L;
+		public SwingAction() {
+			putValue(NAME, "SendAction");
+			putValue(SHORT_DESCRIPTION, "Sends the message in the inputArea to the server");
+		}
+		public void actionPerformed(ActionEvent e) {
+			String message = chatInputTextArea.getText().toString();
+			chatInputTextArea.setText(null);
+			client.sendMessage(message);
 		}
 	}
 }

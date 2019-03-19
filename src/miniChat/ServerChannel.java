@@ -48,9 +48,11 @@ public class ServerChannel implements AutoCloseable {
 
 	// gui
 	ServerMainWindow window;
+	private SocketAddress address;
 
 	///////////////////////////////// CONSTRUCTORS /////////////////////////////////
 	/**
+	 * Basic constructor.
 	 * Creates a local server bound to the given port.
 	 * It uses NIO channels to communicate with the clients.
 	 * @param window 
@@ -62,6 +64,8 @@ public class ServerChannel implements AutoCloseable {
 		waitingMessages = new HashMap<SocketChannel, Set<byte[]>>();
 		clientNames = new HashMap<SocketChannel, String>();
 		port = p;
+
+		startServer();
 	}
 
 	/**
@@ -109,22 +113,22 @@ public class ServerChannel implements AutoCloseable {
 			selector = Selector.open();
 			// create new channel
 			serverChannel = ServerSocketChannel.open();
-			// bind it to the port
-			InetSocketAddress address = new InetSocketAddress(InetAddress.getLocalHost(), port);
+			address = new InetSocketAddress(InetAddress.getLocalHost(), port);
 			serverChannel.bind(address);
+			address = serverChannel.getLocalAddress();
 			// set it to non-blocking
 			serverChannel.configureBlocking(false);
 			// add it to the selector (interested in "accept" events)
 			serverChannel.register(selector, serverChannel.validOps());
 
 			// updates the window
-			window.addressTextField.setText(address.toString());
-			window.infoText.setText("Starting server " + serverChannel.getLocalAddress());
-			window.chatTextArea.append("server : Starting server " + serverChannel.getLocalAddress() + "\n");
+			if (window != null) {
+				initializeWindow();
+			}
+
+			// creating new handler			
 			isRunning = true;
 			doneRunning = false;
-			
-			// creating new handler
 			serverHandler = new Thread(new ServerHandler());
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -157,23 +161,26 @@ public class ServerChannel implements AutoCloseable {
 		}
 
 		// update window
-		window.infoText.setText("Closing the server ...\n");
-		window.chatTextArea.append("server : Closing the server ...\n");
+		if (window != null) {
+			window.infoText.setText("Closing the server ...\n");
+			window.chatTextArea.append("server : Closing the server ...\n");
 
-		// Checking for unsent messages
-		int unsent = 0;
-		for (SocketChannel clientChannel : waitingMessages.keySet()) {
-			Set<byte[]> entry = waitingMessages.get(clientChannel);
-			for (byte[] message : entry) {
-				String msg = new String(message);
-				window.chatTextArea.append("server : 	> NOT sent to "
-						+ clientNames.get(clientChannel)
-						+ " : \""
-						+ msg
-						+ "\"\n");
+			// Checking for unsent messages
+			int unsent = 0;
+			for (SocketChannel clientChannel : waitingMessages.keySet()) {
+				Set<byte[]> entry = waitingMessages.get(clientChannel);
+				for (byte[] message : entry) {
+					String msg = new String(message);
+
+					window.chatTextArea.append("server : 	> NOT sent to "
+							+ clientNames.get(clientChannel)
+							+ " : \""
+							+ msg
+							+ "\"\n");
+				}
 			}
+			window.chatTextArea.append("server : 	... Unsent messages : " + unsent + "\n");
 		}
-		window.chatTextArea.append("server : 	... Unsent messages : " + unsent + "\n");
 
 		// end server : clean up
 		try {
@@ -185,23 +192,32 @@ public class ServerChannel implements AutoCloseable {
 
 				SelectableChannel channel = key.channel();
 				if (channel.equals(serverChannel)) {
-					window.chatTextArea.append("server :	... Closing server socket\n");
+					if (window != null) {
+						window.chatTextArea.append("server :	... Closing server socket\n");
+					}
 					((ServerSocketChannel)channel).socket().close();
 					key.cancel();
 				}
 				else {
-					window.chatTextArea.append("server :	... Closing connection to client " + ((SocketChannel) channel).getRemoteAddress());
+					if (window != null) {
+						window.chatTextArea.append("server :	... Closing connection to client " + ((SocketChannel) channel).getRemoteAddress());
+					}
 					closeClient(key);
 				}
 			}
-			window.chatTextArea.append("server :	... Closing server selector\n");
+			if (window != null) {
+				window.chatTextArea.append("server :	... Closing server selector\n");
+			}
 			selector.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		window.infoText.setText("Goodbye\n");
-		window.chatTextArea.append("server : Done.\n");
-		window.chatTextArea.append("================================\n");
+
+		if (window != null) {
+			window.infoText.setText("Goodbye\n");
+			window.chatTextArea.append("server : Done.\n");
+			window.chatTextArea.append("================================\n");
+		}
 	}
 
 	/**
@@ -218,8 +234,8 @@ public class ServerChannel implements AutoCloseable {
 
 	///////////////////////////////// ACCESSERS /////////////////////////////////
 
-	public SocketAddress getAddress() throws IOException {
-		return serverChannel.getLocalAddress();
+	public SocketAddress getAddress() {
+		return address;
 	}
 
 	public int getPort() {
@@ -236,6 +252,15 @@ public class ServerChannel implements AutoCloseable {
 
 	public void setWindow(ServerMainWindow w) {
 		window = w;
+		initializeWindow();
+	}
+
+	private void initializeWindow() {
+		if (window != null) {
+			window.addressTextField.setText(address.toString());
+			window.infoText.setText("Starting server " + address);
+			window.chatTextArea.append("server : Starting server " + address + "\n");
+		}
 	}
 
 
@@ -269,7 +294,9 @@ public class ServerChannel implements AutoCloseable {
 						// Connecting
 						if(key.isConnectable()) {
 							SocketChannel clientChannel = (SocketChannel) key.channel();
-							window.chatTextArea.append("server : + Finishing connection " + clientNames.get(clientChannel));
+							if (window != null) {
+								window.chatTextArea.append("server : + Finishing connection " + clientNames.get(clientChannel));
+							}
 							clientChannel.finishConnect();
 						}
 
@@ -311,7 +338,9 @@ public class ServerChannel implements AutoCloseable {
 					ByteBuffer buffer = ByteBuffer.wrap(messageBytes);
 					clientChannel.write(buffer);
 					iterator.remove();
-					window.chatTextArea.append("server : > To "+ clientNames.get(clientChannel) + " : \"" + new String(messageBytes) + "\"\n");
+					if (window != null) {
+						window.chatTextArea.append("server : > To "+ clientNames.get(clientChannel) + " : \"" + new String(messageBytes) + "\"\n");
+					}
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -330,8 +359,10 @@ public class ServerChannel implements AutoCloseable {
 
 				// if end of connection client side => closing
 				if (nbBytesRead == -1) {
-					window.infoText.setText("Connection lost with " + clientNames.get(clientChannel));
-					window.chatTextArea.append("server : - Lost connection to client " + clientNames.get(clientChannel) + "\n");
+					if (window != null) {
+						window.infoText.setText("Connection lost with " + clientNames.get(clientChannel));
+						window.chatTextArea.append("server : - Lost connection to client " + clientNames.get(clientChannel) + "\n");
+					}
 					closeClient(key);
 				}
 
@@ -344,20 +375,26 @@ public class ServerChannel implements AutoCloseable {
 					if (clientNames.get(clientChannel) == null) {
 						messageReceived = messageReceived.trim();
 						clientNames.put(clientChannel, messageReceived);
-						window.infoText.setText("New client : " + messageReceived);
-						window.chatTextArea.append("server :   Named client " + clientChannel.getRemoteAddress() + " -> \"" + messageReceived + "\"\n");
-						window.clientListLabel.setText("Connected (" + nbClientsConnected + "):\n\n");
-						window.clientListTextArea.append(messageReceived + " (" + clientChannel.getRemoteAddress() + ")\n");
+						if (window != null) {
+							window.infoText.setText("New client : " + messageReceived);
+							window.chatTextArea.append("server :   Named client " + clientChannel.getRemoteAddress() + " -> \"" + messageReceived + "\"\n");
+							window.clientListLabel.setText("Connected (" + nbClientsConnected + "):\n\n");
+							window.clientListTextArea.append(messageReceived + " (" + clientChannel.getRemoteAddress() + ")\n");
+						}
 					}
 					// next messages = to be transmitted
 					else {
 
-						window.chatTextArea.append("server : < From "+ clientNames.get(clientChannel) + " : \"" + messageReceived + "\"\n");
+						if (window != null) {
+							window.chatTextArea.append("server : < From "+ clientNames.get(clientChannel) + " : \"" + messageReceived + "\"\n");
+						}
 
 						// adding it to the waiting list of all other clients, with hasBeenSent = false
 						for (SocketChannel otherClientChan : waitingMessages.keySet()) {
 							if (!otherClientChan.equals(clientChannel)) {
-								window.chatTextArea.append("server :	Waiting -> " + clientNames.get(otherClientChan));
+								if (window != null) {
+									window.chatTextArea.append("server :	Waiting -> " + clientNames.get(otherClientChan) + "\n");
+								}
 								Set<byte[]> messageSet = waitingMessages.get(otherClientChan);
 								messageSet.add(byteArray);
 								waitingMessages.put(otherClientChan, messageSet);
@@ -385,7 +422,14 @@ public class ServerChannel implements AutoCloseable {
 				// adding it to the hashmap
 				waitingMessages.put(clientChannel, new LinkedHashSet<byte[]>());
 				nbClientsConnected++;
-				window.chatTextArea.append("server : + Added client " + clientChannel.getRemoteAddress() + "\n");
+				SocketAddress clientAddr = clientChannel.getRemoteAddress();
+				if (window != null) {
+					window.chatTextArea.append("server : + Added client " + clientAddr + "\n");
+				}
+				// send acknowledgement message
+				byte[] msgBytes = "ok".getBytes();
+				ByteBuffer buffer = ByteBuffer.wrap(msgBytes);
+				clientChannel.write(buffer);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

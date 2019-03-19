@@ -70,19 +70,16 @@ public class Client implements AutoCloseable {
 		messageListener = new Thread(new MessageListener());
 		messageListener.start();
 		
-		// updates window
-		window.nameTextField.setText(name);
-		
 		// wait until server is ready
-		synchronized (serverReady) {
-			try {
-				window.infoText.setText("Waiting for server...");
-				serverReady.wait();
-				window.infoText.setText("Connected to server");
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
+//		synchronized (serverReady) {
+//			try {
+//				window.infoText.setText("Waiting for server...");
+//				serverReady.wait();
+//				window.infoText.setText("Connected to server");
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
+//		}
 		// send own name to server
 		sendMessage(name);
 
@@ -107,13 +104,13 @@ public class Client implements AutoCloseable {
 		}
 
 		// wait until all messages are read
-		synchronized (doneRunning) {
-			try {
-				doneRunning.wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
+//		synchronized (doneRunning) {
+//			try {
+//				doneRunning.wait();
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
+//		}
 
 		// then we close
 		if (clientChannel.isOpen()) {
@@ -126,8 +123,19 @@ public class Client implements AutoCloseable {
 	}
 
 
+	/**
+	 * Links the window to the client and initialises the information
+	 * @param clientMainWindow
+	 */
 	public void setWindow(ClientMainWindow clientMainWindow) {
 		window = clientMainWindow;
+		// updates window
+		window.nameTextField.setText(name);
+		try {
+			window.addressTextField.setText(clientChannel.getLocalAddress().toString());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	//////////////////////////////// SENDING MESSAGES ///////////////////////////////////
@@ -225,11 +233,11 @@ public class Client implements AutoCloseable {
 					else if (nbBytesRead > 0) {
 						// acknowledgement message
 						if (!serverReady){
-							serverReady = true;
-							// notify the main thread
-							synchronized (serverReady) {
-								serverReady.notify();
-							}
+//							serverReady = true;
+//							// notify the main thread
+//							synchronized (serverReady) {
+//								serverReady.notify();
+//							}
 						}
 						// regular message
 						else {
@@ -242,9 +250,9 @@ public class Client implements AutoCloseable {
 			}
 
 			// when reading is over, we tell the main thread
-			synchronized (doneRunning) {
-				doneRunning.notify();
-			}
+//			synchronized (doneRunning) {
+//				doneRunning.notify();
+//			}
 		}
 
 	}
