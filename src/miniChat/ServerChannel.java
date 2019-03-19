@@ -228,6 +228,17 @@ public class ServerChannel implements AutoCloseable {
 	private void closeClient(SelectionKey key) throws IOException {
 		nbClientsConnected--;
 		SocketChannel clientChannel = (SocketChannel) key.channel();
+		// update view
+		if (window != null) {
+			String name = clientNames.get(clientChannel);
+			clientNames.remove(clientChannel);
+			window.infoText.setText(name + " disconnected");
+			window.clientListLabel.setText("Connected (" + nbClientsConnected + "):\n\n");
+			window.clientListTextArea.setText(null);
+			for (SocketChannel client : clientNames.keySet()) {
+				window.clientListTextArea.append(clientNames.get(client) + " (" + client.getRemoteAddress() + ")\n");
+			}
+		}
 		clientChannel.socket().close();
 		key.cancel();
 	}

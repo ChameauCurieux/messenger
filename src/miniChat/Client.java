@@ -232,17 +232,17 @@ public class Client implements AutoCloseable {
 					// received message
 					else if (nbBytesRead > 0) {
 						// acknowledgement message
-						if (!serverReady){
+//						if (!serverReady){
 //							serverReady = true;
 //							// notify the main thread
 //							synchronized (serverReady) {
 //								serverReady.notify();
 //							}
-						}
-						// regular message
-						else {
+//						}
+//						// regular message
+//						else {
 							window.chatTextArea.append(name + " : < From server : " + new String(buffer.array()) + "\n");							
-						}
+//						}
 					}
 				} catch (IOException e) {
 					e.printStackTrace();
