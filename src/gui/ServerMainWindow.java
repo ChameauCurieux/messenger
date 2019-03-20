@@ -126,7 +126,7 @@ public class ServerMainWindow extends MainWindow {
 		chatInputTextArea.setLineWrap(true);
 		chatInputTextArea.setTabSize(4);
 
-		chatInputScrollPane = new JScrollPane(chatInputTextArea);
+		JScrollPane chatInputScrollPane = new JScrollPane(chatInputTextArea);
 
 
 		JPanel commandPanel = new JPanel();

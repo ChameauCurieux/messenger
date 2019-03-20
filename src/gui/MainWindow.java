@@ -11,10 +11,10 @@ public abstract class MainWindow {
 	protected JTextArea chatTextArea;
 	protected JLabel infoText;
 	protected JTextField addressTextField;
-	protected JScrollPane chatInputScrollPane;
-	
+
 	public void addMessage(String string) {
 		chatTextArea.append(string + "\n");
+		chatTextArea.setCaretPosition(chatTextArea.getDocument().getLength());
 	}
 	public void setInfo(String string) {
 		infoText.setText(string);

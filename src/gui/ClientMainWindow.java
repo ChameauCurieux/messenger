@@ -262,7 +262,7 @@ public class ClientMainWindow extends MainWindow{
             }
         });
 		
-		chatInputScrollPane = new JScrollPane(chatInputTextArea);
+		JScrollPane chatInputScrollPane = new JScrollPane(chatInputTextArea);
 		chatInputScrollPane.setToolTipText("type your message here (CTRL+ENTER for line return)");
 		GridBagConstraints gbc_chatInputScrollPane = new GridBagConstraints();
 		gbc_chatInputScrollPane.weighty = 1.0;
