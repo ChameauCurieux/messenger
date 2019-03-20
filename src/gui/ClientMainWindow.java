@@ -250,6 +250,7 @@ public class ClientMainWindow extends MainWindow{
                     e.consume();
                 }
         		// ENTER sends the messages instead of adding a line
+                // TODO stop the additional lines from appearing
                 else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                 	if (e.getModifiers() == 0) {
                 		sendAction.actionPerformed(null);

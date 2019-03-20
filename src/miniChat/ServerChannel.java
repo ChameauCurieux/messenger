@@ -334,6 +334,7 @@ public class ServerChannel implements AutoCloseable {
 		 * Pass on one message that was received from one client, to another client
 		 * @param key : the destination of the message
 		 */
+		//TODO also transmit the name of the sender
 		private void writeMessage(SelectionKey key) {
 			SocketChannel clientChannel = (SocketChannel) key.channel();
 			Set<byte[]> messageSet = waitingMessages.get(clientChannel);
