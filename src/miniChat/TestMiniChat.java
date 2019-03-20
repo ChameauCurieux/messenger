@@ -19,7 +19,7 @@ public class TestMiniChat {
 			public void run() {
 				try {					
 					ServerMainWindow serverWindow = new ServerMainWindow(s);
-					serverWindow.frame.setVisible(true);
+					serverWindow.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -31,7 +31,7 @@ public class TestMiniChat {
 			public void run() {
 				try {
 					ClientMainWindow clientWindow = new ClientMainWindow(c);
-					clientWindow.frame.setVisible(true);
+					clientWindow.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -43,7 +43,7 @@ public class TestMiniChat {
 			public void run() {
 				try {
 					ClientMainWindow clientWindow2 = new ClientMainWindow(c2);
-					clientWindow2.frame.setVisible(true);
+					clientWindow2.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}

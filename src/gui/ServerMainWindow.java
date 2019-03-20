@@ -10,6 +10,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
+import java.nio.channels.SocketChannel;
+import java.util.Map;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -35,15 +37,11 @@ import miniChat.ServerChannel;
  * @author juju
  *
  */
-public class ServerMainWindow {
+public class ServerMainWindow extends MainWindow {
 
-	public JFrame frame;
-	public JTextArea chatTextArea;
-	public JTextArea chatInputTextArea;
-	public JTextArea clientListTextArea;
-	public JLabel clientListLabel;
-	public JLabel infoText;
-	public JTextField addressTextField;
+	private JTextArea chatInputTextArea;
+	private JTextArea clientListTextArea;
+	private JLabel clientListLabel;
 	private ServerChannel server;
 
 	private final Action startServerAction = new StartAction();
@@ -122,12 +120,13 @@ public class ServerMainWindow {
 		JScrollPane chatTextScrollPane = new JScrollPane(chatTextArea);
 
 		chatInputTextArea = new JTextArea();
+		chatInputTextArea.setEnabled(false);
 		chatInputTextArea.setToolTipText("(doesn't do anything yet)");
 		chatInputTextArea.setWrapStyleWord(true);
 		chatInputTextArea.setLineWrap(true);
 		chatInputTextArea.setTabSize(4);
 
-		JScrollPane chatInputScrollPane = new JScrollPane(chatInputTextArea);
+		chatInputScrollPane = new JScrollPane(chatInputTextArea);
 
 
 		JPanel commandPanel = new JPanel();
@@ -292,6 +291,21 @@ public class ServerMainWindow {
 			server.close();
 			frame.dispose();
 		}
+	}
+
+	/**
+	 * Clears the client list and refills it with the given map clientNames
+	 * @param clientNames : matches client SocketChannel with its name
+	 * @throws IOException
+	 */
+	public void updateConnected(Map<SocketChannel, String> clientNames) throws IOException {
+		int nb = 0;
+		clientListTextArea.setText(null);
+		for (SocketChannel client : clientNames.keySet()) {
+			nb++;
+			clientListTextArea.append(clientNames.get(client) + " (" + client.getRemoteAddress() + ")\n");
+		}
+		clientListLabel.setText("Connected (" + nb + "):");
 	}
 }
 

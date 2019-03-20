@@ -73,9 +73,9 @@ public class Client implements AutoCloseable {
 		// wait until server is ready
 //		synchronized (serverReady) {
 //			try {
-//				window.infoText.setText("Waiting for server...");
+//				window.setInfo("Waiting for server...");
 //				serverReady.wait();
-//				window.infoText.setText("Connected to server");
+//				window.setInfo("Connected to server");
 //			} catch (InterruptedException e) {
 //				e.printStackTrace();
 //			}
@@ -130,9 +130,9 @@ public class Client implements AutoCloseable {
 	public void setWindow(ClientMainWindow clientMainWindow) {
 		window = clientMainWindow;
 		// updates window
-		window.nameTextField.setText(name);
+		window.setName(name);
 		try {
-			window.addressTextField.setText(clientChannel.getLocalAddress().toString());
+			window.setAddress(clientChannel.getLocalAddress().toString());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -202,7 +202,7 @@ public class Client implements AutoCloseable {
 			} else {
 				ByteBuffer buffer = ByteBuffer.wrap(message);
 				clientChannel.write(buffer);
-				window.chatTextArea.append("> To server : \"" + new String(message) + "\"\n");
+				window.addMessage("> To server : \"" + new String(message) + "\"");
 				Thread.sleep(10);
 			}
 		} catch (IOException | InterruptedException e) {
@@ -225,10 +225,9 @@ public class Client implements AutoCloseable {
 
 					// end-of-stream
 					if (nbBytesRead == -1) {
-						window.infoText.setText("Connexion lost");
-						window.chatTextArea.append("Connexion to server lost\n");
-						window.chatInputTextArea.setEnabled(false);
-						window.sendButton.setEnabled(false);
+						window.setInfo("Connexion lost");
+						window.addMessage("Connexion to server lost");
+						window.setConnected(false);
 						close();
 					}
 					// received message
@@ -244,7 +243,7 @@ public class Client implements AutoCloseable {
 //						// regular message
 //						else {
 							String message = new String(buffer.array());
-							window.chatTextArea.append("< From server : " + message + "\n");							
+							window.addMessage("< From server : " + message);
 //						}
 					}
 				} catch (IOException e) {

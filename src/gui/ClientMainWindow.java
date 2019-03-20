@@ -38,17 +38,13 @@ import miniChat.Client;
  * @author juju
  *
  */
-public class ClientMainWindow {
+public class ClientMainWindow extends MainWindow{
 
-	public JFrame frame;
-	public JTextArea chatTextArea;
-	public JTextArea chatInputTextArea;
-	public JTextArea clientListTextArea;
-	public JLabel clientListLabel;
-	public JLabel infoText;
-	public JTextField addressTextField;
-	public JTextField nameTextField;
-	public JButton sendButton;
+	private JTextArea chatInputTextArea;
+	private JTextArea clientListTextArea;
+	private JLabel clientListLabel;
+	private JTextField nameTextField;
+	private JButton sendButton;
 	private Client client;
 	private final Action sendAction = new SendAction();
 
@@ -266,7 +262,7 @@ public class ClientMainWindow {
             }
         });
 		
-		JScrollPane chatInputScrollPane = new JScrollPane(chatInputTextArea);
+		chatInputScrollPane = new JScrollPane(chatInputTextArea);
 		chatInputScrollPane.setToolTipText("type your message here (CTRL+ENTER for line return)");
 		GridBagConstraints gbc_chatInputScrollPane = new GridBagConstraints();
 		gbc_chatInputScrollPane.weighty = 1.0;
@@ -313,5 +309,13 @@ public class ClientMainWindow {
 			chatInputTextArea.setText(null);
 			client.sendMessage(message);
 		}
+	}
+
+	public void setConnected(boolean b) {
+		chatInputTextArea.setEnabled(false);
+		sendButton.setEnabled(false);
+	}
+	public void setName(String name) {
+		nameTextField.setText(name);
 	}
 }
