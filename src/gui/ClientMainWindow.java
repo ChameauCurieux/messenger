@@ -5,12 +5,19 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.net.SocketAddress;
 
+import javax.swing.AbstractAction;
+import javax.swing.Action;
 import javax.swing.DropMode;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -19,14 +26,11 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 
 import miniChat.Client;
-import javax.swing.AbstractAction;
-import java.awt.event.ActionEvent;
-import javax.swing.Action;
-import javax.swing.ImageIcon;
 
 /**
  * Displays informations and controls for a client.
@@ -44,8 +48,9 @@ public class ClientMainWindow {
 	public JLabel infoText;
 	public JTextField addressTextField;
 	public JTextField nameTextField;
+	public JButton sendButton;
 	private Client client;
-	private final Action sendAction = new SwingAction();
+	private final Action sendAction = new SendAction();
 
 
 	/**
@@ -234,8 +239,35 @@ public class ClientMainWindow {
 		chatInputTextArea.setWrapStyleWord(true);
 		chatInputTextArea.setLineWrap(true);
 		chatInputTextArea.setTabSize(4);
+		chatInputTextArea.requestFocusInWindow();
 
+		chatInputTextArea.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+        		// TAB changes the focus instead of adding in the text
+                if (e.getKeyCode() == KeyEvent.VK_TAB) {
+                    if (e.getModifiers() > 0) {
+                    	chatInputTextArea.transferFocusBackward();
+                    } else {
+                    	chatInputTextArea.transferFocus();
+                    }
+                    e.consume();
+                }
+        		// ENTER sends the messages instead of adding a line
+                else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                	if (e.getModifiers() == 0) {
+                		sendAction.actionPerformed(null);
+                	}
+                    // line is added with CTRL+ENTER
+                	else if (e.getModifiers() == InputEvent.CTRL_DOWN_MASK){
+                		chatInputTextArea.append("\n");
+                	}
+                }
+            }
+        });
+		
 		JScrollPane chatInputScrollPane = new JScrollPane(chatInputTextArea);
+		chatInputScrollPane.setToolTipText("type your message here (CTRL+ENTER for line return)");
 		GridBagConstraints gbc_chatInputScrollPane = new GridBagConstraints();
 		gbc_chatInputScrollPane.weighty = 1.0;
 		gbc_chatInputScrollPane.weightx = 1.0;
@@ -245,7 +277,8 @@ public class ClientMainWindow {
 		gbc_chatInputScrollPane.gridy = 0;
 		inputPanel.add(chatInputScrollPane, gbc_chatInputScrollPane);
 
-		JButton sendButton = new JButton();
+		sendButton = new JButton();
+		sendButton.setToolTipText("send message");
 		sendButton.setAction(sendAction);
 		sendButton.setIcon(new ImageIcon(ClientMainWindow.class.getResource("/gui/icons/send_arrow.png")));
 		sendButton.setText("Send");
@@ -254,6 +287,11 @@ public class ClientMainWindow {
 		gbc_sendButton.gridx = 1;
 		gbc_sendButton.gridy = 0;
 		inputPanel.add(sendButton, gbc_sendButton);
+		// add keyboard shortcut
+		KeyStroke enter = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
+		sendButton.getInputMap().put(enter, "sendMessage");
+		sendButton.getActionMap().put("sendMessage", sendAction);
+		
 	}
 
 	private class clientWindowCloser extends WindowAdapter {
@@ -264,11 +302,11 @@ public class ClientMainWindow {
 		}
 	}
 	
-	private class SwingAction extends AbstractAction {
+	private class SendAction extends AbstractAction {
 		private static final long serialVersionUID = -7786195937926838770L;
-		public SwingAction() {
+		public SendAction() {
 			putValue(NAME, "SendAction");
-			putValue(SHORT_DESCRIPTION, "Sends the message in the inputArea to the server");
+			putValue(SHORT_DESCRIPTION, "Sends the message in the input area to the server");
 		}
 		public void actionPerformed(ActionEvent e) {
 			String message = chatInputTextArea.getText().toString();

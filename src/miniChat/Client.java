@@ -202,7 +202,7 @@ public class Client implements AutoCloseable {
 			} else {
 				ByteBuffer buffer = ByteBuffer.wrap(message);
 				clientChannel.write(buffer);
-				window.chatTextArea.append(name + " : > To server : \"" + new String(message) + "\"\n");
+				window.chatTextArea.append("> To server : \"" + new String(message) + "\"\n");
 				Thread.sleep(10);
 			}
 		} catch (IOException | InterruptedException e) {
@@ -226,7 +226,9 @@ public class Client implements AutoCloseable {
 					// end-of-stream
 					if (nbBytesRead == -1) {
 						window.infoText.setText("Connexion lost");
-						window.chatTextArea.append(name + " : Connexion to server lost\n");
+						window.chatTextArea.append("Connexion to server lost\n");
+						window.chatInputTextArea.setEnabled(false);
+						window.sendButton.setEnabled(false);
 						close();
 					}
 					// received message
@@ -241,7 +243,8 @@ public class Client implements AutoCloseable {
 //						}
 //						// regular message
 //						else {
-							window.chatTextArea.append(name + " : < From server : " + new String(buffer.array()) + "\n");							
+							String message = new String(buffer.array());
+							window.chatTextArea.append("< From server : " + message + "\n");							
 //						}
 					}
 				} catch (IOException e) {
