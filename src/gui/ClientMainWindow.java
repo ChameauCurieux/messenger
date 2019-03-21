@@ -242,23 +242,24 @@ public class ClientMainWindow extends MainWindow{
             public void keyPressed(KeyEvent e) {
         		// TAB changes the focus instead of adding in the text
                 if (e.getKeyCode() == KeyEvent.VK_TAB) {
-                    if (e.getModifiers() > 0) {
+                	// SHIFT+TAB changes the focus backward
+                    if ((e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) == 1) {
                     	chatInputTextArea.transferFocusBackward();
                     } else {
                     	chatInputTextArea.transferFocus();
                     }
                     e.consume();
                 }
-        		// ENTER sends the messages instead of adding a line
-                // TODO stop the additional lines from appearing
                 else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                	if (e.getModifiers() == 0) {
-                		sendAction.actionPerformed(null);
-                	}
                     // line is added with CTRL+ENTER
-                	else if (e.getModifiers() == InputEvent.CTRL_DOWN_MASK){
+                	if ((e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) == 1){
                 		chatInputTextArea.append("\n");
                 	}
+            		// ENTER without modifier sends the messages instead of adding a line
+                	else if ((e.getModifiersEx() & (InputEvent.ALT_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK))== 0) {
+                		sendAction.actionPerformed(null);
+                	}
+                    e.consume();
                 }
             }
         });
