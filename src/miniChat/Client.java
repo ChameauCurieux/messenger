@@ -122,7 +122,17 @@ public class Client implements AutoCloseable {
 		}
 	}
 
-
+	public String toString() {
+		String res;
+		try {
+			res = name + "(" + clientChannel.getLocalAddress() + ")";
+		} catch (IOException e) {
+			res = e.toString();
+			e.printStackTrace();
+		}
+		return res;
+	}
+	
 	/**
 	 * Links the window to the client and initialises the information
 	 * @param clientMainWindow

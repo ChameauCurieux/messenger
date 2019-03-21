@@ -261,6 +261,10 @@ public class ServerChannel implements AutoCloseable {
 		window = w;
 		initializeWindow();
 	}
+	
+	public String toString() {
+		return address.toString();
+	}
 
 	private void initializeWindow() {
 		if (window != null) {

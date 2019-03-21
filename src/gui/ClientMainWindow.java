@@ -86,6 +86,10 @@ public class ClientMainWindow extends MainWindow{
 		client.setWindow(this);
 		client.startClient();
 	}
+	
+	public Client getClient() {
+		return client;
+	}
 
 
 	/**
