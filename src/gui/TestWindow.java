@@ -17,6 +17,7 @@ import javax.swing.WindowConstants;
 
 import miniChat.Client;
 import miniChat.ServerChannel;
+import javax.swing.JTextField;
 
 public class TestWindow {
 	private JFrame frame;
@@ -24,6 +25,9 @@ public class TestWindow {
 	private JComboBox<Client> clientComboBox;
 	private final Action action = new ServerLaunchAction();
 	private final Action action_1 = new ClientLaunchAction();
+	private JButton btnLaunchNewClient;
+	private JPanel clientPanel;
+	private JTextField nameTextField;
 	
 	
 	public TestWindow() {
@@ -37,9 +41,8 @@ public class TestWindow {
 	private void initialize() {
 		frame = new JFrame();
 		frame.setType(Type.UTILITY);
-		frame.setResizable(false);
 		frame.setTitle("Mini-Chat : Test");
-		frame.setBounds(100, 100, 314, 237);
+		frame.setBounds(100, 100, 469, 238);
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[]{697, 0};
@@ -57,27 +60,38 @@ public class TestWindow {
 		gbc_btnLaunchNewServer.gridy = 0;
 		frame.getContentPane().add(btnLaunchNewServer, gbc_btnLaunchNewServer);
 		
-		JPanel panel = new JPanel();
-		GridBagConstraints gbc_panel = new GridBagConstraints();
-		gbc_panel.insets = new Insets(0, 0, 5, 0);
-		gbc_panel.gridx = 0;
-		gbc_panel.gridy = 1;
-		frame.getContentPane().add(panel, gbc_panel);
+		JPanel comboBoxesPanel = new JPanel();
+		GridBagConstraints gbc_comboBoxesPanel = new GridBagConstraints();
+		gbc_comboBoxesPanel.insets = new Insets(0, 0, 5, 0);
+		gbc_comboBoxesPanel.gridx = 0;
+		gbc_comboBoxesPanel.gridy = 1;
+		frame.getContentPane().add(comboBoxesPanel, gbc_comboBoxesPanel);
 		
 		serverComboBox = new JComboBox<ServerChannel>();
-		panel.add(serverComboBox);
+		comboBoxesPanel.add(serverComboBox);
 		
 		clientComboBox = new JComboBox<Client>();
-		panel.add(clientComboBox);
+		comboBoxesPanel.add(clientComboBox);
 		
-		JButton btnLaunchNewClient = new JButton();
+		clientPanel = new JPanel();
+		GridBagConstraints gbc_clientPanel = new GridBagConstraints();
+		gbc_clientPanel.insets = new Insets(0, 0, 5, 0);
+		gbc_clientPanel.fill = GridBagConstraints.HORIZONTAL;
+		gbc_clientPanel.gridx = 0;
+		gbc_clientPanel.gridy = 2;
+		frame.getContentPane().add(clientPanel, gbc_clientPanel);
+		
+		nameTextField = new JTextField();
+		nameTextField.setText("client name");
+		nameTextField.setEnabled(false);
+		clientPanel.add(nameTextField);
+		nameTextField.setColumns(10);
+		
+		btnLaunchNewClient = new JButton();
+		clientPanel.add(btnLaunchNewClient);
 		btnLaunchNewClient.setAction(action_1);
 		btnLaunchNewClient.setText("Launch new client");
-		GridBagConstraints gbc_btnLaunchNewClient = new GridBagConstraints();
-		gbc_btnLaunchNewClient.insets = new Insets(0, 0, 5, 0);
-		gbc_btnLaunchNewClient.gridx = 0;
-		gbc_btnLaunchNewClient.gridy = 2;
-		frame.getContentPane().add(btnLaunchNewClient, gbc_btnLaunchNewClient);
+		btnLaunchNewClient.setEnabled(false);
 	}
 
 	////////////////////// ACTIONS ///////////////////////
@@ -88,9 +102,13 @@ public class TestWindow {
 			putValue(SHORT_DESCRIPTION, "Some short description");
 		}
 		public void actionPerformed(ActionEvent e) {
+			// create new server window
 			ServerMainWindow servWindow = new ServerMainWindow();
 			serverComboBox.addItem(servWindow.getServer());
 			servWindow.setVisible(true);
+			// allow creating new clients
+			btnLaunchNewClient.setEnabled(true);
+			nameTextField.setEnabled(true);
 		}
 	}
 	private class ClientLaunchAction extends AbstractAction {
@@ -100,10 +118,13 @@ public class TestWindow {
 			putValue(SHORT_DESCRIPTION, "Some short description");
 		}
 		public void actionPerformed(ActionEvent e) {
+			// get current selected server
 			ServerChannel server = (ServerChannel) serverComboBox.getSelectedItem();
 			ClientMainWindow clientWindow;
 			try {
-				clientWindow = new ClientMainWindow(server.getAddress());
+				// create new client connected to this server
+				String name = nameTextField.getText();
+				clientWindow = new ClientMainWindow(server.getAddress(), name);
 				clientComboBox.addItem(clientWindow.getClient());
 				clientWindow.setVisible(true);
 			} catch (IOException e1) {

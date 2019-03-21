@@ -14,6 +14,7 @@ public class Client implements AutoCloseable {
 	public static int instanceCount = 0;
 	// connection
 	private SocketChannel clientChannel;
+	private SocketAddress address;
 	// name
 	private String name;
 	// random
@@ -33,7 +34,7 @@ public class Client implements AutoCloseable {
 	 * @throws IOException if opening the socket has failed in any way
 	 */
 	public Client(SocketAddress ad) throws IOException {
-		this(ad, "client" + instanceCount);
+		this(ad, null);
 	}
 
 	/**
@@ -45,12 +46,16 @@ public class Client implements AutoCloseable {
 	 */
 	public Client(SocketAddress ad, String n) throws IOException {
 		instanceCount++;
+		if (n == null) {
+			n = "client" + instanceCount;
+		}
 		name = n;
 		// for random messages
 		generator = new Random();
 		// connects to the server
 		clientChannel = SocketChannel.open(ad);
 		clientChannel.configureBlocking(false);
+		address = clientChannel.getLocalAddress();
 	}
 
 	//////////////////////////////// START & STOP ///////////////////////////////////
@@ -124,12 +129,7 @@ public class Client implements AutoCloseable {
 
 	public String toString() {
 		String res;
-		try {
-			res = name + "(" + clientChannel.getLocalAddress() + ")";
-		} catch (IOException e) {
-			res = e.toString();
-			e.printStackTrace();
-		}
+		res = name + "(" + address + ")";
 		return res;
 	}
 	
@@ -141,11 +141,7 @@ public class Client implements AutoCloseable {
 		window = clientMainWindow;
 		// updates window
 		window.setName(name);
-		try {
-			window.setAddress(clientChannel.getLocalAddress().toString());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		window.setAddress(address.toString());
 	}
 	
 	//////////////////////////////// SENDING MESSAGES ///////////////////////////////////
