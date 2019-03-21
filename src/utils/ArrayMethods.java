@@ -13,7 +13,7 @@ public class ArrayMethods {
 	 * @param n : number of bytes copied
 	 * @return resulting array
 	 */
-	public static byte[] trimArray(ByteBuffer buffer, int n) {
+	public static byte[] trimmedArray(ByteBuffer buffer, int n) {
 		byte[] array = new byte[n];
 		buffer.rewind();
 		buffer.get(array);

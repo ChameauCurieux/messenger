@@ -242,7 +242,7 @@ public class Client implements AutoCloseable {
 //						}
 //						// regular message
 //						else {
-							String message = new String(buffer.array());
+							String message = new String(ArrayMethods.trimmedArray(buffer, nbBytesRead));
 							window.addMessage("< From server : " + message);
 //						}
 					}

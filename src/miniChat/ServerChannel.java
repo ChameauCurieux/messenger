@@ -376,7 +376,7 @@ public class ServerChannel implements AutoCloseable {
 
 				// else => reading message
 				else {
-					byte[] byteArray = ArrayMethods.trimArray(buffer, nbBytesRead);
+					byte[] byteArray = ArrayMethods.trimmedArray(buffer, nbBytesRead);
 					messageReceived = new String(byteArray);
 
 					// first message received = client name
@@ -385,7 +385,7 @@ public class ServerChannel implements AutoCloseable {
 						clientNames.put(clientChannel, messageReceived);
 						if (window != null) {
 							window.setInfo("New client : " + messageReceived);
-							window.addMessage("  Named client " + clientChannel.getRemoteAddress() + " -> \"" + messageReceived + "\"\n");
+							window.addMessage("Named client " + clientChannel.getRemoteAddress() + " -> \"" + messageReceived + "\"");
 							window.updateConnected(clientNames);
 						}
 					}
@@ -393,7 +393,7 @@ public class ServerChannel implements AutoCloseable {
 					else {
 
 						if (window != null) {
-							window.addMessage("< From "+ clientNames.get(clientChannel) + " : \"" + messageReceived + "\"\n");
+							window.addMessage("< From "+ clientNames.get(clientChannel) + " : \"" + messageReceived + "\"");
 						}
 
 						// adding it to the waiting list of all other clients, with hasBeenSent = false
