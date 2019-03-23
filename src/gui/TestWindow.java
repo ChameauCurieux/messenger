@@ -3,7 +3,6 @@ package gui;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.Window.Type;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
 
@@ -13,11 +12,11 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.WindowConstants;
 
 import miniChat.Client;
 import miniChat.ServerChannel;
-import javax.swing.JTextField;
 
 public class TestWindow {
 	private JFrame frame;
