@@ -8,14 +8,14 @@ import java.util.List;
 import java.util.Random;
 
 import gui.ClientMainWindow;
-import utils.ArrayMethods;
+import utils.Messages;
 
 public class Client implements AutoCloseable {
 	public static int instanceCount = 0;
 	// connection
 	private SocketChannel clientChannel;
 	private SocketAddress address;
-	// name
+	// name : cannot be longer than 255 characters
 	private String name;
 	// random
 	private Random generator;
@@ -185,6 +185,23 @@ public class Client implements AutoCloseable {
 	}
 
 	/**
+	 * Signs the message before sending it to the server.
+	 * @param message
+	 */
+	public void sendSignedMessage(String message) {
+		sendSignedMessage(message.getBytes());
+	}
+	
+	/**
+	 * Signs the message before sending it to the server.
+	 * @param message
+	 */
+	public void sendSignedMessage(byte[] message) {
+		byte[] signed = Messages.signMessage(name, message);
+		sendMessage(signed);
+	}
+
+	/**
 	 * Send the message msg to the server
 	 * @param msg : the message to be sent
 	 */
@@ -193,15 +210,15 @@ public class Client implements AutoCloseable {
 	}
 
 	/**
+	 * Basic method : 
 	 * Send the message to the server
 	 * @param message : the message to be sent
 	 */
 	public void sendMessage(byte[] message) {
 		try {
-			if (message.length > 256) {
-				// divide up the message in 256-bytes segments
-				// TODO fuse segments in one long message
-				List<byte[]> segments = ArrayMethods.split(message);
+			if (message.length > Messages.bufferSize) {
+				// divide up the message in buffer-sized segments
+				List<byte[]> segments = Messages.split(message);
 				for (byte[] segment : segments) {
 					sendMessage(segment);
 				}
@@ -209,13 +226,12 @@ public class Client implements AutoCloseable {
 				ByteBuffer buffer = ByteBuffer.wrap(message);
 				clientChannel.write(buffer);
 				window.addMessage("> To server : \"" + new String(message) + "\"");
-				Thread.sleep(10);
 			}
-		} catch (IOException | InterruptedException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
-	}
+	}	
 
 	//////////////////////////////// HANDLER ///////////////////////////////////
 
@@ -226,7 +242,7 @@ public class Client implements AutoCloseable {
 			// read indefinitely the server's message
 			while (isRunning) {
 				try {
-					ByteBuffer buffer = ByteBuffer.allocate(256);
+					ByteBuffer buffer = ByteBuffer.allocate(Messages.bufferSize);
 					int nbBytesRead = clientChannel.read(buffer);
 
 					// end-of-stream
@@ -236,7 +252,9 @@ public class Client implements AutoCloseable {
 						window.setConnected(false);
 						close();
 					}
+					
 					// received message
+					// TODO fuse long messages
 					else if (nbBytesRead > 0) {
 						// acknowledgement message
 //						if (!serverReady){
@@ -248,8 +266,8 @@ public class Client implements AutoCloseable {
 //						}
 //						// regular message
 //						else {
-							String message = new String(ArrayMethods.trimmedArray(buffer, nbBytesRead));
-							window.addMessage("< From server : " + message);
+							byte[] message = Messages.trimmedArray(buffer, nbBytesRead);
+							window.addMessage("< From " + Messages.toString(message));
 //						}
 					}
 				} catch (IOException e) {
@@ -265,3 +283,16 @@ public class Client implements AutoCloseable {
 
 	}
 }
+
+/*
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam at tincidunt nisl. Curabitur vitae mauris laoreet, tempus eros non, sollicitudin nunc. Praesent posuere sem libero, et congue tellus elementum at. Proin quis dui neque. Suspendisse scelerisque justo eget convallis finibus. Nullam diam turpis, porta quis tortor quis, ultricies interdum turpis. Nam eget lobortis risus. Nam suscipit efficitur odio a luctus. Aliquam tristique elementum vestibulum. Nullam sodales eget libero sit amet lacinia. Nulla ultricies odio justo, sit amet rhoncus ante malesuada a. Mauris ultrices risus nec pretium tristique. In convallis, enim ut vulputate elementum, massa dui dignissim libero, vulputate dignissim libero odio vitae magna.
+
+Ut a rutrum felis, non suscipit nunc. Praesent justo dui, fringilla at orci in, porta viverra libero. Vivamus sed lobortis eros. Phasellus pellentesque, orci elementum dictum luctus, velit est pretium odio, eu sollicitudin lorem quam ut ligula. Integer ornare interdum diam, egestas ornare leo tempor vitae. Fusce a dapibus arcu. Aliquam vel iaculis orci.
+
+Etiam tempor eu justo eget luctus. Nullam tincidunt augue volutpat nisi rutrum, id consequat turpis venenatis. Phasellus rutrum pretium mi, vel finibus dui laoreet sit amet. Vestibulum at augue et neque eleifend accumsan blandit sit amet enim. Quisque aliquet luctus felis ut pharetra. Integer eu leo iaculis, mattis felis ac, fermentum risus. Ut dignissim, diam et tristique tristique, sem nisl sodales nisl, sit amet rhoncus ligula quam nec libero. Donec porttitor nulla nisi, id rutrum sem porttitor sed. Sed metus purus, ullamcorper sed sem vel, iaculis viverra sem. Mauris massa lorem, imperdiet sit amet maximus facilisis, vulputate non velit.
+
+Vivamus sed nisi eu mauris rutrum elementum. Nam interdum, neque et cursus sagittis, diam odio egestas libero, sed cursus neque dolor nec nisl. Integer convallis venenatis eros, fringilla congue quam suscipit sit amet. Vestibulum at risus quis ex dignissim varius vitae non dui. Vestibulum id massa eu sapien sollicitudin ultricies. Nulla quis consequat ex. Cras ut vehicula magna, eget cursus diam. Nam elementum congue fermentum. Aenean laoreet tempor tortor, sit amet mollis augue euismod a. In tincidunt metus lectus. Duis ut hendrerit lorem, nec porta ipsum. Duis malesuada, ex et finibus consectetur, elit arcu sagittis nisl, in luctus purus mi non nunc. Nulla sodales quis odio ac finibus. Aenean eget urna dictum, imperdiet dui quis, posuere arcu. Etiam venenatis velit ut dolor euismod, ut gravida metus cursus.
+
+Duis elementum sem fringilla neque blandit posuere. Ut et accumsan urna, in aliquam nibh. Proin neque quam, mattis sit amet turpis a, commodo lobortis purus. Maecenas pellentesque porta felis a mattis. Etiam volutpat risus ac vestibulum dignissim. Ut scelerisque nisl sit amet erat volutpat, eu vehicula lorem fermentum. Nulla dapibus turpis sit amet est porttitor luctus. 
+
+ */

@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Set;
 
 import gui.ServerMainWindow;
-import utils.ArrayMethods;
+import utils.Messages;
 
 
 public class ServerChannel implements AutoCloseable {
@@ -31,7 +31,7 @@ public class ServerChannel implements AutoCloseable {
 	// managing client messages 
 	int nbClientsConnected = 0;
 	String messageReceived;
-	Map<SocketChannel, Set<byte[]>> waitingMessages;
+	Map<SocketChannel, Set<byte[]>> messagesToBeSent;
 	Map<SocketChannel, String> clientNames;
 
 	// multi-threading
@@ -61,7 +61,7 @@ public class ServerChannel implements AutoCloseable {
 	public ServerChannel(int p) {
 		isRunning = false;
 		doneRunning = false;
-		waitingMessages = new HashMap<SocketChannel, Set<byte[]>>();
+		messagesToBeSent = new HashMap<SocketChannel, Set<byte[]>>();
 		clientNames = new HashMap<SocketChannel, String>();
 		port = p;
 
@@ -167,8 +167,8 @@ public class ServerChannel implements AutoCloseable {
 
 			// Checking for unsent messages
 			int unsent = 0;
-			for (SocketChannel clientChannel : waitingMessages.keySet()) {
-				Set<byte[]> entry = waitingMessages.get(clientChannel);
+			for (SocketChannel clientChannel : messagesToBeSent.keySet()) {
+				Set<byte[]> entry = messagesToBeSent.get(clientChannel);
 				for (byte[] message : entry) {
 					String msg = new String(message);
 
@@ -338,10 +338,9 @@ public class ServerChannel implements AutoCloseable {
 		 * Pass on one message that was received from one client, to another client
 		 * @param key : the destination of the message
 		 */
-		//TODO also transmit the name of the sender
 		private void writeMessage(SelectionKey key) {
 			SocketChannel clientChannel = (SocketChannel) key.channel();
-			Set<byte[]> messageSet = waitingMessages.get(clientChannel);
+			Set<byte[]> messageSet = messagesToBeSent.get(clientChannel);
 			Iterator<byte[]> iterator = messageSet.iterator();
 			if (iterator.hasNext()) {
 				// we send the first awaiting message
@@ -366,7 +365,7 @@ public class ServerChannel implements AutoCloseable {
 		private void readMessage(SelectionKey key) {
 			try {
 				SocketChannel clientChannel = (SocketChannel) key.channel();
-				ByteBuffer buffer = ByteBuffer.allocate(256);
+				ByteBuffer buffer = ByteBuffer.allocate(Messages.bufferSize);
 				int nbBytesRead = clientChannel.read(buffer);
 
 				// if end of connection client side => closing
@@ -380,12 +379,12 @@ public class ServerChannel implements AutoCloseable {
 
 				// else => reading message
 				else {
-					byte[] byteArray = ArrayMethods.trimmedArray(buffer, nbBytesRead);
+					byte[] byteArray = Messages.trimmedArray(buffer, nbBytesRead);
 					messageReceived = new String(byteArray);
 
 					// first message received = client name
 					if (clientNames.get(clientChannel) == null) {
-						messageReceived = messageReceived.trim();
+						// TODO : update client list for other clients too
 						clientNames.put(clientChannel, messageReceived);
 						if (window != null) {
 							window.setInfo("New client : " + messageReceived);
@@ -393,23 +392,22 @@ public class ServerChannel implements AutoCloseable {
 							window.updateConnected(clientNames);
 						}
 					}
-					// next messages = to be transmitted
+					// other messages = to be transmitted
 					else {
-
-						if (window != null) {
-							window.addMessage("< From "+ clientNames.get(clientChannel) + " : \"" + messageReceived + "\"");
-						}
-
 						// adding it to the waiting list of all other clients, with hasBeenSent = false
-						for (SocketChannel otherClientChan : waitingMessages.keySet()) {
+						for (SocketChannel otherClientChan : messagesToBeSent.keySet()) {
 							if (!otherClientChan.equals(clientChannel)) {
 //								if (window != null) {
 //									window.addMessage("	Waiting -> " + clientNames.get(otherClientChan));
 //								}
-								Set<byte[]> messageSet = waitingMessages.get(otherClientChan);
+								Set<byte[]> messageSet = messagesToBeSent.get(otherClientChan);
 								messageSet.add(byteArray);
-								waitingMessages.put(otherClientChan, messageSet);
+								messagesToBeSent.put(otherClientChan, messageSet);
 							}
+						}
+
+						if (window != null) {
+							window.addMessage("< From " + Messages.toString(byteArray));
 						}
 					}
 				}
@@ -431,14 +429,15 @@ public class ServerChannel implements AutoCloseable {
 				// adding it to the selector
 				clientChannel.register(selector, clientChannel.validOps());
 				// adding it to the hashmap
-				waitingMessages.put(clientChannel, new LinkedHashSet<byte[]>());
+				messagesToBeSent.put(clientChannel, new LinkedHashSet<byte[]>());
 				nbClientsConnected++;
 				SocketAddress clientAddr = clientChannel.getRemoteAddress();
+				// update window
 				if (window != null) {
 					window.addMessage("+ Added client " + clientAddr);
 				}
 				// send acknowledgement message
-				byte[] msgBytes = "ok".getBytes();
+				byte[] msgBytes = Messages.signMessage("server", "ok".getBytes());
 				ByteBuffer buffer = ByteBuffer.wrap(msgBytes);
 				clientChannel.write(buffer);
 			} catch (IOException e) {

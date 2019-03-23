@@ -313,7 +313,7 @@ public class ClientMainWindow extends MainWindow{
 		public void actionPerformed(ActionEvent e) {
 			String message = chatInputTextArea.getText().toString();
 			chatInputTextArea.setText(null);
-			client.sendMessage(message);
+			client.sendSignedMessage(message);
 		}
 	}
 
