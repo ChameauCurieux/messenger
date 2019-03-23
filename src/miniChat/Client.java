@@ -46,7 +46,7 @@ public class Client implements AutoCloseable {
 	 */
 	public Client(SocketAddress ad, String n) throws IOException {
 		instanceCount++;
-		if (n == null) {
+		if (n == null || n.equals("")) {
 			n = "client" + instanceCount;
 		}
 		name = n;

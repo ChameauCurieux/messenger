@@ -28,7 +28,7 @@ public class TestWindow {
 	private final Action action_1 = new ClientLaunchAction();
 	private JButton btnLaunchNewClient;
 	private JPanel clientPanel;
-	private JTextField nameTextField;
+	private JTextField clientNameTextField;
 	
 	
 	public TestWindow() {
@@ -82,11 +82,11 @@ public class TestWindow {
 		gbc_clientPanel.gridy = 2;
 		frame.getContentPane().add(clientPanel, gbc_clientPanel);
 		
-		nameTextField = new JTextField();
-		nameTextField.setText("client name");
-		nameTextField.setEnabled(false);
-		clientPanel.add(nameTextField);
-		nameTextField.setColumns(10);
+		clientNameTextField = new JTextField();
+		clientNameTextField.setText("client name");
+		clientNameTextField.setEnabled(false);
+		clientPanel.add(clientNameTextField);
+		clientNameTextField.setColumns(10);
 		
 		btnLaunchNewClient = new JButton();
 		clientPanel.add(btnLaunchNewClient);
@@ -109,7 +109,8 @@ public class TestWindow {
 			servWindow.setVisible(true);
 			// allow creating new clients
 			btnLaunchNewClient.setEnabled(true);
-			nameTextField.setEnabled(true);
+			clientNameTextField.setEnabled(true);
+			clientNameTextField.setText(null);
 		}
 	}
 	private class ClientLaunchAction extends AbstractAction {
@@ -124,7 +125,7 @@ public class TestWindow {
 			ClientMainWindow clientWindow;
 			try {
 				// create new client connected to this server
-				String name = nameTextField.getText();
+				String name = clientNameTextField.getText();
 				clientWindow = new ClientMainWindow(server.getAddress(), name);
 				clientComboBox.addItem(clientWindow.getClient());
 				clientWindow.setVisible(true);
