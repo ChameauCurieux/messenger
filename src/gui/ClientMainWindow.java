@@ -240,7 +240,8 @@ public class ClientMainWindow extends MainWindow{
 		chatInputTextArea.setLineWrap(true);
 		chatInputTextArea.setTabSize(4);
 		chatInputTextArea.requestFocusInWindow();
-
+		chatInputTextArea.setToolTipText("type your message here (CTRL+ENTER for line return)");
+		
 		chatInputTextArea.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -269,7 +270,6 @@ public class ClientMainWindow extends MainWindow{
         });
 		
 		JScrollPane chatInputScrollPane = new JScrollPane(chatInputTextArea);
-		chatInputScrollPane.setToolTipText("type your message here (CTRL+ENTER for line return)");
 		GridBagConstraints gbc_chatInputScrollPane = new GridBagConstraints();
 		gbc_chatInputScrollPane.weighty = 1.0;
 		gbc_chatInputScrollPane.weightx = 1.0;
