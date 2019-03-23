@@ -21,6 +21,7 @@ import javax.swing.JTextField;
 
 public class TestWindow {
 	private JFrame frame;
+	// TODO focus on the selected window
 	private JComboBox<ServerChannel> serverComboBox;
 	private JComboBox<Client> clientComboBox;
 	private final Action action = new ServerLaunchAction();
