@@ -41,7 +41,6 @@ public class TestWindow {
 
 	private void initialize() {
 		frame = new JFrame();
-		frame.setType(Type.UTILITY);
 		frame.setTitle("Mini-Chat : Test");
 		frame.setBounds(100, 100, 469, 238);
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
